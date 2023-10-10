@@ -26,11 +26,6 @@ func (c *userUseCase) FindAll(ctx context.Context) ([]domain.Users, error) {
 	return users, err
 }
 
-func (c *userUseCase) FindByID(ctx context.Context, id uint) (domain.Users, error) {
-	user, err := c.userRepo.FindByID(ctx, id)
-	return user, err
-}
-
 func (c *userUseCase) Save(ctx context.Context, user domain.Users) (domain.Users, error) {
 
 	fmt.Println("user:", user)
@@ -41,11 +36,6 @@ func (c *userUseCase) Save(ctx context.Context, user domain.Users) (domain.Users
 	}
 	user, err = c.userRepo.Save(ctx, user)
 	return user, err
-}
-
-func (c *userUseCase) Delete(ctx context.Context, user domain.Users) error {
-	err := c.userRepo.Delete(ctx, user)
-	return err
 }
 
 func (c *userUseCase) UserLogin(ctx context.Context, userinput models.Userlogindata) (int, bool) {

@@ -3,7 +3,6 @@ package handler
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/copier"
@@ -54,29 +53,6 @@ func (cr *UserHandler) FindAll(c *gin.Context) {
 	}
 }
 
-func (cr *UserHandler) FindByID(c *gin.Context) {
-	paramsId := c.Param("id")
-	id, err := strconv.Atoi(paramsId)
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "cannot parse id",
-		})
-		return
-	}
-
-	user, err := cr.userUseCase.FindByID(c.Request.Context(), uint(id))
-
-	if err != nil {
-		c.AbortWithStatus(http.StatusNotFound)
-	} else {
-		response := Response{}
-		copier.Copy(&response, &user)
-
-		c.JSON(http.StatusOK, response)
-	}
-}
-
 func (cr *UserHandler) SaveUser(c *gin.Context) {
 	var user domain.Users
 
@@ -98,41 +74,6 @@ func (cr *UserHandler) SaveUser(c *gin.Context) {
 
 }
 
-func (cr *UserHandler) Delete(c *gin.Context) {
-	paramsId := c.Param("id")
-	fmt.Println("parmsID :", paramsId)
-	id, err := strconv.Atoi(paramsId)
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Cannot parse id",
-		})
-		return
-	}
-
-	ctx := c.Request.Context()
-	user, err := cr.userUseCase.FindByID(ctx, uint(id))
-
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "User doesn't exist !",
-		})
-		return
-		//c.AbortWithStatus(http.StatusNotFound)
-	}
-
-	if user == (domain.Users{}) {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "User is not booking yet",
-		})
-		return
-	}
-
-	cr.userUseCase.Delete(ctx, user)
-
-	c.JSON(http.StatusOK, gin.H{"message": "User is deleted successfully"})
-}
-
 func (cr *UserHandler) GetSignup(c *gin.Context) {
 	Response := "succesfully got the html page"
 	c.JSON(http.StatusOK, Response)
@@ -140,16 +81,11 @@ func (cr *UserHandler) GetSignup(c *gin.Context) {
 
 func (cr UserHandler) UserLogin(c *gin.Context) {
 
-	//email := c.PostForm("email")
-	//password := c.PostForm("password")
-	// instead
 	var userinput models.Userlogindata
 	err := c.Bind(&userinput)
 	if err != nil {
 		fmt.Println("error while binding form data :", err)
 	}
-
-	fmt.Println("email and password ", userinput)
 
 	// ckecking the db to match given data and gets the the user id from db in return
 	userid, is_user := cr.userUseCase.UserLogin(c.Request.Context(), userinput)
@@ -163,7 +99,7 @@ func (cr UserHandler) UserLogin(c *gin.Context) {
 	}
 
 	tokenString := middleware.GetTokenString(userid, "user")
-
+	c.SetCookie("Authorization", tokenString, 3600, "", "", true, false)
 	c.JSON(http.StatusOK, gin.H{
 		"userid": userid,
 		"status": "logged in",

@@ -41,3 +41,16 @@ func (c *adminDatabase) ListUser(ctx context.Context) ([]models.ListOfUser, erro
 
 	return list, err
 }
+
+func (c *adminDatabase) FindByID(ctx context.Context, id uint) (domain.Users, error) {
+	var user domain.Users
+	err := c.DB.First(&user, id).Error
+
+	return user, err
+}
+
+func (c *adminDatabase) Delete(ctx context.Context, user domain.Users) error {
+	err := c.DB.Delete(&user).Error
+
+	return err
+}

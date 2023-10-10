@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"net/http"
 	"readon/pkg/api/middleware"
+	domain "readon/pkg/domain"
 	"readon/pkg/models"
 	services "readon/pkg/usecase/interface"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/copier"
 )
 
 type AdminHandler struct {
@@ -59,4 +62,62 @@ func (cr *AdminHandler) ListUser(c *gin.Context) {
 		"status": "working",
 		"users":  list,
 	})
+}
+
+func (cr *AdminHandler) FindByID(c *gin.Context) {
+	paramsId := c.Param("id")
+	id, err := strconv.Atoi(paramsId)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "cannot parse id",
+		})
+		return
+	}
+
+	user, err := cr.AdminUseCase.FindByID(c.Request.Context(), uint(id))
+
+	if err != nil {
+		c.AbortWithStatus(http.StatusNotFound)
+	} else {
+		response := Response{}
+		copier.Copy(&response, &user)
+
+		c.JSON(http.StatusOK, response)
+	}
+}
+
+func (cr *AdminHandler) Delete(c *gin.Context) {
+	paramsId := c.Param("id")
+	fmt.Println("parmsID :", paramsId)
+	id, err := strconv.Atoi(paramsId)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Cannot parse id",
+		})
+		return
+	}
+
+	ctx := c.Request.Context()
+	user, err := cr.AdminUseCase.FindByID(ctx, uint(id))
+
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "User doesn't exist !",
+		})
+		return
+		//c.AbortWithStatus(http.StatusNotFound)
+	}
+
+	if user == (domain.Users{}) {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "User is not booking yet",
+		})
+		return
+	}
+
+	cr.AdminUseCase.Delete(ctx, user)
+
+	c.JSON(http.StatusOK, gin.H{"message": "User is deleted successfully"})
 }

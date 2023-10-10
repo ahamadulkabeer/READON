@@ -29,24 +29,12 @@ func (c *userDatabase) FindAll(ctx context.Context) ([]domain.Users, error) {
 	return users, err
 }
 
-func (c *userDatabase) FindByID(ctx context.Context, id uint) (domain.Users, error) {
-	var user domain.Users
-	err := c.DB.First(&user, id).Error
-
-	return user, err
-}
-
 func (c *userDatabase) Save(ctx context.Context, user domain.Users) (domain.Users, error) {
 	err := c.DB.Save(&user).Error
 
 	return user, err
 }
 
-func (c *userDatabase) Delete(ctx context.Context, user domain.Users) error {
-	err := c.DB.Delete(&user).Error
-
-	return err
-}
 func (c *userDatabase) Authorise(ctx context.Context, user models.Userlogindata) (int, bool) {
 	var users domain.Users
 	result := c.DB.Where("email = ? AND password = ?", user.Email, user.Password).Limit(1).Find(&users)

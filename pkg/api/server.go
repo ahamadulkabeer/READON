@@ -43,8 +43,8 @@ func NewServerHTTP(userHandler *handler.UserHandler, productHandler *handler.Pro
 	//users.GET("users", userHandler.FindAll)
 	users.GET("/search", productHandler.ListProducts)
 
-	admin.DELETE("user/:id", userHandler.Delete)
-	admin.GET("user/:id", userHandler.FindByID)
+	admin.DELETE("user/:id", adminHandler.Delete)
+	admin.GET("user/:id", adminHandler.FindByID)
 	admin.GET("/users", adminHandler.ListUser)
 
 	return &ServerHTTP{engine: engine}
