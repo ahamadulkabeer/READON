@@ -15,6 +15,7 @@ import (
 	services "readon/pkg/usecase/interface"
 )
 
+// initilising
 type UserHandler struct {
 	userUseCase services.UserUseCase
 }
