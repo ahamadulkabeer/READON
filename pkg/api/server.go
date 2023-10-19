@@ -7,8 +7,6 @@ import (
 
 	_ "readon/cmd/api/docs"
 	handler "readon/pkg/api/handler"
-
-	middleware "readon/pkg/api/middleware"
 )
 
 type ServerHTTP struct {
@@ -26,9 +24,9 @@ func NewServerHTTP(userHandler *handler.UserHandler, productHandler *handler.Pro
 	//engine.LoadHTMLGlob("pkg/templates/*.html")
 
 	// Auth middleware
-	users := engine.Group("/user", middleware.UserAuthorizationMiddleware)
-	admin := engine.Group("/admin", middleware.AdminAuthorizationMiddleware)
-	category := admin.Group("/category")
+	users := engine.Group("/user")
+	admin := engine.Group("/admin")
+	//category := admin.Group("/category")
 
 	//user handlers
 	engine.GET("/signup", userHandler.GetSignup)
@@ -39,25 +37,34 @@ func NewServerHTTP(userHandler *handler.UserHandler, productHandler *handler.Pro
 	engine.POST("/otplogin", userHandler.VerifyAndSendOtp)
 	engine.POST("/verifyotp", userHandler.VerifyOtp)
 
+	users.DELETE("/account/:id", userHandler.DeleteUserAccount)
+	users.GET("/profile/:id", userHandler.GetUserProfile)
+	/*users.PUT("/editprofile",userHandler.EditProfile)
+	users.GET("/readbook", userHandler.ReadBook)
+	users.GET("/premium",userHandler.GetPremium)
+	users.POST("/premium",userHandler.MakePremium)*/
 	users.GET("/home", userHandler.UserHome, productHandler.ListProducts)
 	users.GET("/books", productHandler.ListProducts)
 	users.GET("/book/:id", productHandler.GetProduct)
+	users.POST("/listbooks", productHandler.ListProductsForUSer)
 
 	//admin handlers
 	engine.GET("/adminlogin", adminHandler.GetLogin)
 	engine.POST("/adminlogin", adminHandler.Login)
 
-	admin.PUT("/user/:id", adminHandler.BlockOrUnBlock)
+	admin.PUT("/blockuser/:id", adminHandler.BlockOrUnBlock)
 	admin.DELETE("/user/:id", adminHandler.Delete)
 	admin.GET("/user/:id", adminHandler.FindByID)
-	admin.GET("/users", adminHandler.ListUser)
+	admin.GET("/users", adminHandler.ListUsers)
+	admin.GET("/admins", adminHandler.ListAdmins)
 	admin.POST("/addproduct", productHandler.Addproduct)
+	admin.DELETE("/deletebook/:id", productHandler.DeleteProduct)
 
 	//categories
-	category.GET("/categorylist", categoryHandler.ListCategories)
-	category.POST("/addcategory", categoryHandler.AddCategory)
-	category.PUT("/updatecategory/:id", categoryHandler.UpdateCategory)
-	category.DELETE("/deletecategory/:id", categoryHandler.DeleteCategory)
+	admin.GET("/categorylist", categoryHandler.ListCategories)
+	admin.POST("/addcategory", categoryHandler.AddCategory)
+	admin.PUT("/updatecategory/:id", categoryHandler.UpdateCategory)
+	admin.DELETE("/deletecategory/:id", categoryHandler.DeleteCategory)
 
 	return &ServerHTTP{engine: engine}
 }

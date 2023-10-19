@@ -1,7 +1,6 @@
 package usecase
 
 import (
-	"context"
 	"errors"
 	"fmt"
 
@@ -10,54 +9,81 @@ import (
 	"readon/pkg/models"
 	interfaces "readon/pkg/repository/interface"
 	services "readon/pkg/usecase/interface"
+
+	"github.com/jinzhu/copier"
 )
 
 type userUseCase struct {
 	userRepo interfaces.UserRepository
 }
 
-func NewUserUseCase(repo interfaces.UserRepository) services.UserUseCase {
+func NewUserUseCase(urepo interfaces.UserRepository) services.UserUseCase {
 	return &userUseCase{
-		userRepo: repo,
+		userRepo: urepo,
 	}
 }
 
-func (c *userUseCase) FindAll(ctx context.Context) ([]domain.User, error) {
-	users, err := c.userRepo.FindAll(ctx)
-	return users, err
-}
-
-func (c *userUseCase) Save(ctx context.Context, user domain.User) (domain.User, error) {
+func (c *userUseCase) Save(user models.SignupData) (domain.User, error) {
 
 	fmt.Println("user:", user)
+	var User domain.User
+	copier.Copy(&User, &user)
 
-	err := middleware.ValidateUserData(&user)
+	err := middleware.ValidateUserData(&User)
+	if err != nil {
+		return User, err
+	}
+	err = c.userRepo.CheckForEmail(user.Email)
+	if err == nil {
+		return User, errors.New("Email already has an account ")
+	}
+	User, err = c.userRepo.Save(User)
+	return User, err
+}
+
+func (c *userUseCase) UserLogin(userinput models.Userlogindata) (int, bool, bool, error) {
+
+	user, err := c.userRepo.FindByEmail(userinput.Email)
+	if err != nil {
+		return 0, false, false, errors.New("invalid username or password")
+	}
+	if user.Password != userinput.Password {
+		//return 0, false, errors.New("password does not match")
+		return 0, false, false, errors.New("invalid username or password")
+	}
+	if user.Permission == false {
+		return 0, false, false, errors.New("user have benn blocked by the admin")
+	}
+
+	return int(user.ID), true, user.Premium, err
+}
+
+func (c userUseCase) GetUserProfile(id int) (domain.User, error) {
+	var user domain.User
+	user, err := c.userRepo.FindByID(uint(id))
 	if err != nil {
 		return user, err
 	}
-	user, err = c.userRepo.Save(ctx, user)
 	return user, err
 }
 
-func (c *userUseCase) UserLogin(ctx context.Context, userinput models.Userlogindata) (int, bool, error) {
-
-	user, err := c.userRepo.FindByEmail(ctx, userinput.Email)
+func (c userUseCase) DeleteUserAccount(id int) error {
+	var user domain.User
+	user, err := c.userRepo.FindByID(uint(id))
 	if err != nil {
-		return 0, false, err
+		return err
 	}
-	if user.Password != userinput.Password {
-		return 0, false, errors.New("password does not match")
+	err = c.userRepo.DeleteUser(user)
+	if err != nil {
+		return err
 	}
-	if user.Permission == false {
-		return 0, false, errors.New("user have benn blocked by the admin")
-	}
-	return int(user.ID), true, err
+	return nil
 }
 
-func (c userUseCase) VerifyAndSendOtp(ctx context.Context, email string) error {
-	err := c.userRepo.CheckForEmail(ctx, email)
+func (c userUseCase) VerifyAndSendOtp(email string) error {
+	err := c.userRepo.CheckForEmail(email)
 	if err != nil {
-		return errors.New("there is no user with this email")
+		return errors.New("Invalid email")
 	}
 	otp, err := middleware.GenerateAndSendOpt(email)
 	fmt.Println("otp   : ", otp)

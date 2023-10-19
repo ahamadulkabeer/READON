@@ -1,14 +1,15 @@
 package interfaces
 
 import (
-	"context"
 	"readon/pkg/domain"
 	"readon/pkg/models"
 )
 
 type ProductRepository interface {
-	ListProducts(ctx context.Context) ([]models.ListingBook, error)
+	ListProducts() ([]models.ListingBook, error)
+	ListProductsForUser(models.Pagination, int) ([]models.ListingBook, int, error)
 	AddProduct(product domain.Book) error
 	AddImage(image []byte) error
-	GetProducts(int) ([]domain.Book, error)
+	GetProduct(int) (domain.Book, error)
+	DeleteProduct(domain.Book) error
 }

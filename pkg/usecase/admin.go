@@ -1,7 +1,6 @@
 package usecase
 
 import (
-	"context"
 	"fmt"
 	domain "readon/pkg/domain"
 	"readon/pkg/models"
@@ -11,34 +10,50 @@ import (
 
 type AdminUseCase struct {
 	adminRepo interfaces.AdminRepository
+	userRepo  interfaces.UserRepository
 }
 
-func NewAdminUsecase(repo interfaces.AdminRepository) services.AdminUseCase {
+func NewAdminUsecase(adminrepo interfaces.AdminRepository, userrepo interfaces.UserRepository) services.AdminUseCase {
 	return &AdminUseCase{
-		adminRepo: repo,
+		adminRepo: adminrepo,
+		userRepo:  userrepo,
 	}
 }
 
-func (c AdminUseCase) Login(ctx context.Context, admin models.Userlogindata) (int, bool) {
-	return c.adminRepo.Login(ctx, admin)
+func (c AdminUseCase) Login(admin models.Userlogindata) (int, bool) {
+	return c.adminRepo.Login(admin)
 }
 
-func (cr *AdminUseCase) ListUser(ctx context.Context) ([]models.ListOfUser, error) {
-	return cr.adminRepo.ListUser(ctx)
+func (cr *AdminUseCase) ListAdmins() ([]models.Admin, error) {
+	return cr.adminRepo.ListAdmins()
 }
 
-func (c *AdminUseCase) FindByID(ctx context.Context, id uint) (domain.User, error) {
-	user, err := c.adminRepo.FindByID(ctx, id)
+func (c AdminUseCase) ListUsers(pageDet *models.Pagination) ([]domain.User, int, error) {
+	if pageDet.NewPage == 0 {
+		pageDet.NewPage = 1
+	}
+	pageDet.Size = 5
+	offset := pageDet.Size * (pageDet.NewPage - 1)
+	users, numofresults, err := c.userRepo.ListUsers(*pageDet, offset)
+	pageDet.Lastpage = numofresults / pageDet.Size
+	if numofresults%pageDet.Size != 0 {
+		pageDet.Lastpage++
+	}
+	return users, numofresults, err
+}
+
+func (c *AdminUseCase) FindByID(id uint) (domain.User, error) {
+	user, err := c.userRepo.FindByID(id)
 	return user, err
 }
 
-func (c *AdminUseCase) Delete(ctx context.Context, user domain.User) error {
-	err := c.adminRepo.Delete(ctx, user)
+func (c *AdminUseCase) Delete(user domain.User) error {
+	err := c.userRepo.DeleteUser(user)
 	return err
 }
 
-func (c *AdminUseCase) BlockOrUnBlock(ctx context.Context, id int) bool {
-	status := c.adminRepo.BlockOrUnBlock(ctx, id)
+func (c *AdminUseCase) BlockOrUnBlock(id int) bool {
+	status := c.userRepo.BlockOrUnBlock(id)
 	fmt.Println("status in usecase :", status)
 	return status
 }

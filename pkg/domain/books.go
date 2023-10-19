@@ -7,8 +7,9 @@ type Book struct {
 	About      string `gorm:"type:text"`
 	Chapters   int
 	Rating     float32
-	CategoryID int      `gorm:"not null;default:1" sql:"type:integer REFERENCES categories(id) ON DELETE SET NULL"` // Foreign key without gorm tag
-	Category   Category `gorm:"foreignkey:CategoryID"`
+	Premium    bool     `gorm:"not null;default:false"`
+	CategoryID int      `gorm:"not null;default:1" `
+	Category   Category `gorm:"foreignKey:CategoryID;constraint:OnUpdate:CASCADE,OnDelete:SET DEFAULT;"`
 }
 
 //have to add  tags and reviews here on this table

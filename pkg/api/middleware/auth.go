@@ -6,16 +6,20 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-func checkRole(token *jwt.Token) (string, bool) {
-	claims, ok := token.Claims.(jwt.MapClaims)
-	role := claims["role"].(string)
-	return role, ok
-}
+func GetTokenString(id int, role string, premium bool) string {
 
-func getID(token *jwt.Token) (int, bool) {
-	claims, ok := token.Claims.(jwt.MapClaims)
-	id := int(claims["id"].(float64))
-	return id, ok
+	claims := jwt.MapClaims{
+		"id":      id,
+		"role":    role,
+		"premium": premium,
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	ss, err := token.SignedString([]byte("secret"))
+	if err != nil {
+		fmt.Println("error while creating token:", err)
+	}
+	return ss
 }
 
 func validateToken(tokenstring string) (*jwt.Token, error) {
@@ -30,17 +34,14 @@ func validateToken(tokenstring string) (*jwt.Token, error) {
 	return token, err
 }
 
-func GetTokenString(id int, role string) string {
+func checkRole(token *jwt.Token) (string, bool) {
+	claims, ok := token.Claims.(jwt.MapClaims)
+	role := claims["role"].(string)
+	return role, ok
+}
 
-	claims := jwt.MapClaims{
-		"id":   id,
-		"role": role,
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	ss, err := token.SignedString([]byte("secret"))
-	if err != nil {
-		fmt.Println("error while creating token:", err)
-	}
-	return ss
+func getID(token *jwt.Token) (int, bool) {
+	claims, ok := token.Claims.(jwt.MapClaims)
+	id := int(claims["id"].(float64))
+	return id, ok
 }

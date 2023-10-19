@@ -25,16 +25,16 @@ func (c categoryDatabase) AddCategory(newcategory string) (domain.Category, erro
 
 }
 
-func (c categoryDatabase) CheckCategory(currrent string) error {
-	existingCategory := &domain.Category{Name: currrent}
-	result := c.DB.Where("name = ?", existingCategory.Name).First(&existingCategory)
-	return result.Error
+func (c categoryDatabase) CheckCategory(category string) error {
+	existingCategory := &domain.Category{Name: category}
+	err := c.DB.Where("name = ?", category).First(&existingCategory).Error
+	return err
 }
 
-func (c categoryDatabase) GetCategoryById(idtoch int) (domain.Category, error) {
+func (c categoryDatabase) GetCategoryById(idtoch int) error {
 	var Category domain.Category
 	err := c.DB.Where("id = ?", idtoch).First(&Category).Error
-	return Category, err
+	return err
 }
 
 func (c categoryDatabase) UpdateCategory(idtoch int, newctg string) (domain.Category, error) {

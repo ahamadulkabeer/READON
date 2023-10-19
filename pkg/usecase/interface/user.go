@@ -1,20 +1,20 @@
 package interfaces
 
 import (
-	"context"
-
 	domain "readon/pkg/domain"
 	"readon/pkg/models"
 )
 
 type UserUseCase interface {
-	FindAll(ctx context.Context) ([]domain.User, error)
+	Save(models.SignupData) (domain.User, error)
 
-	Save(ctx context.Context, user domain.User) (domain.User, error)
+	UserLogin(userinput models.Userlogindata) (int, bool, bool, error)
 
-	UserLogin(ctx context.Context, userinput models.Userlogindata) (int, bool, error)
+	GetUserProfile(int) (domain.User, error)
 
-	VerifyAndSendOtp(context.Context, string) error
+	DeleteUserAccount(int) error
+
+	VerifyAndSendOtp(string) error
 
 	VerifyOtp(string, string) error
 }

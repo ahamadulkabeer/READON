@@ -1,9 +1,9 @@
 package repository
 
 import (
-	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	domain "readon/pkg/domain"
 	"readon/pkg/models"
@@ -22,21 +22,27 @@ func NewUserRepository(DB *gorm.DB) interfaces.UserRepository {
 	return &userDatabase{DB}
 }
 
-func (c *userDatabase) FindAll(ctx context.Context) ([]domain.User, error) {
-	fmt.Println("ctx :", ctx)
+func (c userDatabase) ListUsers(pageDet models.Pagination, offset int) ([]domain.User, int, error) {
 	var users []domain.User
-	err := c.DB.Find(&users).Error
-
-	return users, err
+	var numOfResult int64
+	log.Println("pagedat in repo", pageDet)
+	log.Println("offset :", offset)
+	err := c.DB.Table("users").Select("id,name,email,permission").Where(" name ILIKE  ?", fmt.Sprintf("%%%s%%", pageDet.Search)).Offset(offset).Limit(pageDet.Size).Find(&users).Error
+	if err != nil {
+		return users, 0, err
+	}
+	log.Println("users", users)
+	err = c.DB.Table("users").Select("COUNT(*)").Where("name ILIKE ?", fmt.Sprintf("%%%s%%", pageDet.Search)).Count(&numOfResult).Error
+	return users, int(numOfResult), err
 }
 
-func (c *userDatabase) Save(ctx context.Context, user domain.User) (domain.User, error) {
+func (c *userDatabase) Save(user domain.User) (domain.User, error) {
 	err := c.DB.Save(&user).Error
 
 	return user, err
 }
 
-func (c *userDatabase) Authorise(ctx context.Context, user models.Userlogindata) (int, bool, error) {
+func (c *userDatabase) Authorise(user models.Userlogindata) (int, bool, error) {
 	var users domain.User
 	result := c.DB.Where("email = ? AND password = ? AND permission = ?", user.Email, user.Password, true).Limit(1).Find(&users)
 	if result.Error != nil {
@@ -49,16 +55,47 @@ func (c *userDatabase) Authorise(ctx context.Context, user models.Userlogindata)
 	return int(users.ID), true, result.Error
 }
 
-func (c *userDatabase) FindByEmail(ctx context.Context, email string) (domain.User, error) {
+func (c userDatabase) FindByID(id uint) (domain.User, error) {
 	var user domain.User
-	err := c.DB.Where("email = ?", email).Find(&user)
-	if err != nil {
-		return user, err.Error
-	}
-	return user, err.Error
+	err := c.DB.First(&user, id).Error
+
+	return user, err
 }
 
-func (c userDatabase) CheckForEmail(ctx context.Context, email string) error {
+func (c userDatabase) DeleteUser(user domain.User) error {
+	err := c.DB.Delete(&user).Error
+
+	return err
+}
+
+func (c userDatabase) BlockOrUnBlock(id int) bool {
+	sql := `
+	        UPDATE users
+	        SET permission = CASE
+	            WHEN permission THEN false
+	            ELSE true
+	        END
+	        WHERE id = ?`
+
+	c.DB.Exec(sql, id)
+
+	var permission bool
+	sql = "SELECT permission FROM users WHERE id = ?"
+	c.DB.Raw(sql, id).Scan(&permission)
+	return permission
+}
+
+func (c *userDatabase) FindByEmail(email string) (domain.User, error) {
+	var user domain.User
+	db := c.DB.Where("email = ?", email).Find(&user)
+	if db.RowsAffected <= 0 {
+		return user, errors.New("Email not found")
+	}
+	log.Println("login user details : ", user)
+	return user, nil
+}
+
+func (c userDatabase) CheckForEmail(email string) error {
 	var user domain.User
 	result := c.DB.Where("email = ?", email).First(&user)
 	return result.Error

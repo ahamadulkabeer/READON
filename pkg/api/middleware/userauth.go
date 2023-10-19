@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 
@@ -41,9 +40,6 @@ func UserAuthorizationMiddleware(c *gin.Context) {
 		c.Abort()
 		return
 	}
-
-	ctx := context.WithValue(c, "userid", id)
-	// Set the context to the request
-	c.Request = c.Request.WithContext(ctx)
+	c.Set("id", id)
 	c.Next()
 }

@@ -6,7 +6,6 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-playground/validator/v10 v10.15.5
 	github.com/golang-jwt/jwt v3.2.2+incompatible
-	github.com/google/wire v0.5.0
 	github.com/jinzhu/copier v0.4.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/sendgrid/sendgrid-go v3.13.0+incompatible
@@ -14,8 +13,8 @@ require (
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.0
 	github.com/swaggo/swag v1.16.2
-	gorm.io/driver/postgres v1.5.2
-	gorm.io/gorm v1.25.4
+	gorm.io/driver/postgres v1.5.3
+	gorm.io/gorm v1.25.5
 )
 
 require (
@@ -37,7 +36,7 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
-	github.com/jackc/pgx/v5 v5.3.1 // indirect
+	github.com/jackc/pgx/v5 v5.4.3 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
