@@ -17,3 +17,14 @@ type ListOfUser struct {
 	Name  string
 	Email string
 }
+type Newcategory struct {
+	Name string `form:"name"`
+}
+
+type Product struct {
+	Name       string `form:"name"`
+	Author     string `form:"author"`
+	Image      []byte `form:"image"`
+	About      string `form:"about"`
+	CategoryID int    `form:"category"`
+}

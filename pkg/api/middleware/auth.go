@@ -2,53 +2,20 @@ package middleware
 
 import (
 	"fmt"
-	"net/http"
-	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
 )
 
-func AuthorizationMiddleware(c *gin.Context) {
-	fmt.Println("Authorising....")
-	s := c.Request.Header.Get("Authorization")
-
-	tokenstring := strings.TrimPrefix(s, "Bearer ")
-
-	token, err := validateToken(tokenstring)
-	if err != nil {
-		c.Abort()
-		fmt.Println("error in validating tokenstring :", err)
-		c.JSON(http.StatusSeeOther, gin.H{
-			"status": "cookie not found ,redirected to guest home",
-			"error":  err,
-		})
-		return
-	}
-	role := ckeckingRole(token)
-
-	switch role {
-	case "admin":
-		c.JSON(http.StatusOK, "got admin page")
-	case "creator":
-		c.JSON(http.StatusOK, "got creator home")
-	case "user":
-		c.JSON(http.StatusOK, "got user home")
-	default:
-		c.JSON(http.StatusNotFound, "couldn,t login ,reddirected to goes thomme")
-	}
-
+func checkRole(token *jwt.Token) (string, bool) {
+	claims, ok := token.Claims.(jwt.MapClaims)
+	role := claims["role"].(string)
+	return role, ok
 }
 
-func ckeckingRole(token *jwt.Token) string {
-
-	if claims, ok := token.Claims.(jwt.MapClaims); ok {
-		// Access your claim data here
-		role := claims["role"].(string)
-		return role
-		// You can access other claims in a similar wa
-	}
-	return ""
+func getID(token *jwt.Token) (int, bool) {
+	claims, ok := token.Claims.(jwt.MapClaims)
+	id := int(claims["id"].(float64))
+	return id, ok
 }
 
 func validateToken(tokenstring string) (*jwt.Token, error) {

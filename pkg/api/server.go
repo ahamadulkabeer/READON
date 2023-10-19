@@ -15,7 +15,7 @@ type ServerHTTP struct {
 	engine *gin.Engine
 }
 
-func NewServerHTTP(userHandler *handler.UserHandler, productHandler *handler.ProductHandler, adminHandler *handler.AdminHandler) *ServerHTTP { //
+func NewServerHTTP(userHandler *handler.UserHandler, productHandler *handler.ProductHandler, adminHandler *handler.AdminHandler, categoryHandler *handler.CategoryHandler) *ServerHTTP {
 	engine := gin.New()
 
 	// Use logger from Gin
@@ -23,29 +23,41 @@ func NewServerHTTP(userHandler *handler.UserHandler, productHandler *handler.Pro
 
 	// Swagger docs
 	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
-
-	//SIGN UP
-	engine.GET("/signup", userHandler.GetSignup)
-	engine.POST("/signup", userHandler.SaveUser)
-
-	//general login
-	engine.GET("/login", middleware.AuthorizationMiddleware, userHandler.UserHome)
-	engine.POST("/login", userHandler.UserLogin)
-
-	//  admin login
-	engine.GET("/adminlogin", middleware.AuthorizationMiddleware)
-	engine.POST("/adminlogin", adminHandler.Login)
+	//engine.LoadHTMLGlob("pkg/templates/*.html")
 
 	// Auth middleware
-	users := engine.Group("/user", middleware.AuthorizationMiddleware)
-	admin := engine.Group("/admin", middleware.AuthorizationMiddleware)
+	users := engine.Group("/user", middleware.UserAuthorizationMiddleware)
+	admin := engine.Group("/admin", middleware.AdminAuthorizationMiddleware)
+	category := admin.Group("/category")
 
-	//users.GET("users", userHandler.FindAll)
-	users.GET("/search", productHandler.ListProducts)
+	//user handlers
+	engine.GET("/signup", userHandler.GetSignup)
+	engine.POST("/signup", userHandler.SaveUser)
+	engine.POST("/login", userHandler.UserLogin)
+	engine.GET("/login", userHandler.GetLogin)
+	engine.GET("/otplogin", userHandler.GetOtpLogin)
+	engine.POST("/otplogin", userHandler.VerifyAndSendOtp)
+	engine.POST("/verifyotp", userHandler.VerifyOtp)
 
-	admin.DELETE("user/:id", adminHandler.Delete)
-	admin.GET("user/:id", adminHandler.FindByID)
+	users.GET("/home", userHandler.UserHome, productHandler.ListProducts)
+	users.GET("/books", productHandler.ListProducts)
+	users.GET("/book/:id", productHandler.GetProduct)
+
+	//admin handlers
+	engine.GET("/adminlogin", adminHandler.GetLogin)
+	engine.POST("/adminlogin", adminHandler.Login)
+
+	admin.PUT("/user/:id", adminHandler.BlockOrUnBlock)
+	admin.DELETE("/user/:id", adminHandler.Delete)
+	admin.GET("/user/:id", adminHandler.FindByID)
 	admin.GET("/users", adminHandler.ListUser)
+	admin.POST("/addproduct", productHandler.Addproduct)
+
+	//categories
+	category.GET("/categorylist", categoryHandler.ListCategories)
+	category.POST("/addcategory", categoryHandler.AddCategory)
+	category.PUT("/updatecategory/:id", categoryHandler.UpdateCategory)
+	category.DELETE("/deletecategory/:id", categoryHandler.DeleteCategory)
 
 	return &ServerHTTP{engine: engine}
 }

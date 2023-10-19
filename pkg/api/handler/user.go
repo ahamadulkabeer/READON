@@ -31,6 +31,10 @@ func NewUserHandler(usecase services.UserUseCase) *UserHandler {
 	}
 }
 
+func (cr UserHandler) GetLogin(c *gin.Context) {
+	c.JSON(http.StatusOK, "got html page : user login")
+}
+
 // FindAll godoc
 // @summary Get all users
 // @description Get all users
@@ -41,8 +45,8 @@ func NewUserHandler(usecase services.UserUseCase) *UserHandler {
 // @Router /user/users [get]
 // @response 200 {object} []Response "OK"
 func (cr *UserHandler) FindAll(c *gin.Context) {
-	users, err := cr.userUseCase.FindAll(c.Request.Context())
 
+	users, err := cr.userUseCase.FindAll(c.Request.Context())
 	if err != nil {
 		c.AbortWithStatus(http.StatusNotFound)
 	} else {
@@ -53,8 +57,18 @@ func (cr *UserHandler) FindAll(c *gin.Context) {
 	}
 }
 
+//	Signup godoc
+//
+// @summary Get all users
+// @description Get all users
+// @tags users
+// @security ApiKeyAuth
+// @id Save User
+// @produce json
+// @Router /signup [Post]
+// @response 200 {object} []Response "OK"
 func (cr *UserHandler) SaveUser(c *gin.Context) {
-	var user domain.Users
+	var user domain.User
 
 	if err := c.BindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err})
@@ -88,11 +102,13 @@ func (cr UserHandler) UserLogin(c *gin.Context) {
 	}
 
 	// ckecking the db to match given data and gets the the user id from db in return
-	userid, is_user := cr.userUseCase.UserLogin(c.Request.Context(), userinput)
+	userid, is_user, err := cr.userUseCase.UserLogin(c.Request.Context(), userinput)
+	fmt.Println("eroor :", err)
 	if !is_user {
 		c.JSON(http.StatusNotFound, gin.H{
 			"userid": userid,
-			"status": "match not found , could not login :(",
+			"error ": err,
+			"status": " could not login :(",
 			"hint":   "please try again",
 		})
 		return
@@ -113,4 +129,57 @@ func (cr UserHandler) UserLogin(c *gin.Context) {
 func (cr *UserHandler) UserHome(c *gin.Context) {
 	Response := "succesfully got the user home page"
 	c.JSON(http.StatusOK, Response)
+}
+
+// Otp login
+
+func (cr *UserHandler) GetOtpLogin(c *gin.Context) {
+	c.JSON(http.StatusOK, "got login page !!! enter emil")
+}
+
+func (cr *UserHandler) VerifyAndSendOtp(c *gin.Context) {
+	var userinput models.Userlogindata
+	err := c.Bind(&userinput)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, "couldnot bind json")
+		return
+	}
+	fmt.Println("email :", userinput)
+	err = cr.userUseCase.VerifyAndSendOtp(c, userinput.Email)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status": "Unauthorised !",
+			"err":    err.Error(),
+			"hint":   "please try again eith another email",
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "got email and otp is sent",
+		"email":   userinput.Email,
+		"hint":    "enter otp ",
+		"button":  "verify",
+		"button ": "resend otp",
+	})
+}
+
+func (cr UserHandler) VerifyOtp(c *gin.Context) {
+	var otpinput domain.Otp
+	err := c.Bind(&otpinput)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, "couldnot bind json")
+		return
+	}
+	err = cr.userUseCase.VerifyOtp(otpinput.Otp, otpinput.Email)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"status ": "Unauthorised otp",
+			"error":   err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"status ": "otp verified",
+		"hint ":   "redirected into home page",
+	})
 }

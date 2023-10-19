@@ -42,15 +42,32 @@ func (c *adminDatabase) ListUser(ctx context.Context) ([]models.ListOfUser, erro
 	return list, err
 }
 
-func (c *adminDatabase) FindByID(ctx context.Context, id uint) (domain.Users, error) {
-	var user domain.Users
+func (c *adminDatabase) FindByID(ctx context.Context, id uint) (domain.User, error) {
+	var user domain.User
 	err := c.DB.First(&user, id).Error
 
 	return user, err
 }
 
-func (c *adminDatabase) Delete(ctx context.Context, user domain.Users) error {
+func (c *adminDatabase) Delete(ctx context.Context, user domain.User) error {
 	err := c.DB.Delete(&user).Error
 
 	return err
+}
+
+func (c *adminDatabase) BlockOrUnBlock(ctx context.Context, id int) bool {
+	sql := `
+	        UPDATE users
+	        SET permission = CASE
+	            WHEN permission THEN false
+	            ELSE true
+	        END
+	        WHERE id = ?`
+
+	c.DB.Exec(sql, id)
+
+	var permission bool
+	sql = "SELECT permission FROM users WHERE id = ?"
+	c.DB.Raw(sql, id).Scan(&permission)
+	return permission
 }

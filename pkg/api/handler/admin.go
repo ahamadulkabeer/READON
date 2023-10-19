@@ -23,6 +23,10 @@ func NewAdminHandler(usecase services.AdminUseCase) *AdminHandler {
 	}
 }
 
+func (cr AdminHandler) GetLogin(c *gin.Context) {
+	c.JSON(http.StatusOK, "got html page : login as admin")
+}
+
 func (cr AdminHandler) Login(c *gin.Context) {
 	var admin models.Userlogindata
 	err := c.Bind(&admin)
@@ -49,7 +53,6 @@ func (cr AdminHandler) Login(c *gin.Context) {
 	// setting cookie  here >>>
 
 	fmt.Println("token string :", tokenString)
-
 }
 
 func (cr *AdminHandler) ListUser(c *gin.Context) {
@@ -78,7 +81,10 @@ func (cr *AdminHandler) FindByID(c *gin.Context) {
 	user, err := cr.AdminUseCase.FindByID(c.Request.Context(), uint(id))
 
 	if err != nil {
-		c.AbortWithStatus(http.StatusNotFound)
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "User doesn't exist !",
+		})
+		return
 	} else {
 		response := Response{}
 		copier.Copy(&response, &user)
@@ -110,7 +116,7 @@ func (cr *AdminHandler) Delete(c *gin.Context) {
 		//c.AbortWithStatus(http.StatusNotFound)
 	}
 
-	if user == (domain.Users{}) {
+	if user == (domain.User{}) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "User is not booking yet",
 		})
@@ -120,4 +126,23 @@ func (cr *AdminHandler) Delete(c *gin.Context) {
 	cr.AdminUseCase.Delete(ctx, user)
 
 	c.JSON(http.StatusOK, gin.H{"message": "User is deleted successfully"})
+}
+
+func (cr *AdminHandler) BlockOrUnBlock(c *gin.Context) {
+	paramId := c.Param("id")
+	fmt.Println("parmID :", paramId)
+	id, err := strconv.Atoi(paramId)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Cannot parse id",
+		})
+		return
+	}
+	current_status := cr.AdminUseCase.BlockOrUnBlock(c, id)
+	if current_status == true {
+		c.JSON(http.StatusOK, gin.H{"status": "user is unblocked !"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "user is blocked !"})
 }
