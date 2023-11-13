@@ -3,9 +3,15 @@ package models
 import "readon/pkg/domain"
 
 type SignupData struct {
+	Id       int
 	Name     string `copier:"must"`
 	Email    string `copier:"must"`
 	Password string `copier:"must"`
+}
+
+type UpdateData struct {
+	Id   int
+	Name string `copier:"must"`
 }
 
 type Userlogindata struct {
@@ -22,14 +28,30 @@ type Product struct {
 	Author     string `form:"author"`
 	Image      []byte `form:"image"`
 	About      string `form:"about"`
-	CategoryID int    `form:"category"`
+	Price      float64
+	CategoryID int `form:"category"`
+}
+
+type ProductUpdate struct {
+	Id         int     `form:"id"`
+	Name       string  `form:"name"`
+	Author     string  `form:"author"`
+	About      string  `form:"about"`
+	Price      float64 `form:"price"`
+	CategoryID int     `form:"category"`
 }
 
 type ListingBook struct {
-	ID     int
-	Title  string
-	Author string
-	Rating float32
+	ID          int `gorm:"column:book_id"`
+	Title       string
+	Author      string
+	Rating      float64
+	About       string
+	Price       float64
+	Premium     bool
+	Category_Id int    `gorm:"column:category_id"`
+	Category    string `gorm:"column:category_name"`
+	Image       []byte
 }
 
 type User struct {

@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"readon/pkg/domain"
@@ -15,7 +16,7 @@ type productDatabase struct {
 }
 
 // Initilising repository
-// this is a 
+// this is a
 
 func NewProductRepository(DB *gorm.DB) interfaces.ProductRepository {
 	return &productDatabase{
@@ -26,57 +27,99 @@ func NewProductRepository(DB *gorm.DB) interfaces.ProductRepository {
 func (c *productDatabase) ListProducts() ([]models.ListingBook, error) {
 	var list []models.ListingBook
 
-	db := c.DB.Table("books").Select("id,title, author,rating").Find(&list) //.Limit(8)
+	db := c.DB.Table("books").Select("books.id AS book_id, books.title, books.author, books.about, books.rating, books.premium,categories.id AS category_id,categories.name AS category_name").
+		Joins("JOIN categories ON books.category_id = categories.id").
+		//Joins("JOIN bookcovers ON books.id = bookcovers.book_id").
+		Find(&list) //.Limit(8)
 	fmt.Println("list :", list)
 	return list, db.Error
 }
 
-func (c *productDatabase) ListProductsForUser(pageDet models.Pagination, offset int) ([]models.ListingBook, int, error) {
+func (c *productDatabase) ListProductsForUser(pageDet models.Pagination, offset int) ([]models.ListingBook, error) {
 	var list []models.ListingBook
-	var count int64
+
 	log.Println("pagedat in repo", pageDet)
 	log.Println("offset :", offset)
-	query := c.DB.Table("books").Select("id,title, author,rating").Where(" title ILIKE  ? ", fmt.Sprintf("%%%s%%", pageDet.Search))
-	if pageDet.Filter != 0 {
-		query = query.Where("category_id = ?", pageDet.Filter)
+	//query := c.DB.Table("books").Select("id,title, author,rating").Where(" title ILIKE  ? ", fmt.Sprintf("%%%s%%", pageDet.Search))
+	query := c.DB.Table("books").Select("books.id AS book_id, books.title, books.author, books.about, books.rating, books.premium, books.price, categories.id AS category_id,categories.name AS category_name, bookcovers.image ").
+		Joins("JOIN categories ON books.category_id = categories.id").
+		Joins("JOIN (SELECT DISTINCT ON (book_id) * FROM bookcovers ORDER BY book_id, id) AS bookcovers ON bookcovers.book_id  = books.id")
+
+	if pageDet.Search != "" {
+		query = query.Where(" books.title ILIKE  ? ", fmt.Sprintf("%%%s%%", pageDet.Search))
 	}
+	if pageDet.Filter != 0 {
+		query = query.Where("books.category_id = ?", pageDet.Filter)
+	}
+
 	err := query.Offset(offset).Limit(pageDet.Size).Find(&list).Error
 	if err != nil {
-		return list, 0, err
+		return list, err
 	}
-	log.Println("list :", list)
-	query = c.DB.Table("books").Select("id,title, author,rating").Where(" title ILIKE  ? ", fmt.Sprintf("%%%s%%", pageDet.Search))
+	// for testing purpose
+	for i := range list {
+		list[i].Image = nil
+	}
+
+	//log.Println("list :", list)
+	return list, err
+}
+
+func (c productDatabase) GetTotalNoOfproducts(pageDet models.Pagination) (int, error) {
+	var count int64
+
+	query := c.DB.Table("books").Select("id").Where(" title ILIKE  ? ", fmt.Sprintf("%%%s%%", pageDet.Search))
 	if pageDet.Filter != 0 {
 		query = query.Where("category_id = ?", pageDet.Filter)
 	}
-	err = query.Count(&count).Error
+	err := query.Count(&count).Error
 	if err != nil {
-		return list, 0, err
+		return 0, err
 	}
-	return list, int(count), err
+	return int(count), err
 }
 
-func (c *productDatabase) AddProduct(product domain.Book) error {
+func (c *productDatabase) AddProduct(product domain.Book) (int, error) {
 
 	err := c.DB.Save(&product).Error
+	fmt.Println("product id :", product.ID)
+	return int(product.ID), err
+}
 
+func (c *productDatabase) EditProduct(product domain.Book) (domain.Book, error) {
+	err := c.DB.Save(&product).Error
+	fmt.Println("product id :", product.ID)
+	return product, err
+}
+
+func (c productDatabase) AddImage(image []byte, book_Id int) error {
+
+	err := c.DB.Exec("INSERT INTO bookcovers(image,book_id) VALUES ( ?, ?)", image, book_Id).Error
 	return err
 }
 
-func (c productDatabase) AddImage(image []byte) error {
-
-	err := c.DB.Exec("INSERT INTO bookcovers(image,book_id) VALUES ( ?, ?)", image, 1).Error
-	return err
-}
-
-func (c productDatabase) GetProduct(bookId int) (domain.Book, error) {
-	var books domain.Book
-	err := c.DB.Table("books").Where("id = ?", bookId).Find(&books).Error
-	return books, err
+func (c productDatabase) GetProduct(bookId int) (models.ListingBook, error) {
+	var book models.ListingBook
+	var err error
+	db := c.DB.Table("books").Select("books.id AS book_Id, books.title, books.author, books.about, books.rating, books.premium, books.price, categories, bookcovers.image").
+		Joins("JOIN categories ON books.category_id = categories.id").
+		Joins("JOIN bookcovers ON books.id = bookcovers.book_id").
+		Where("books.id = ?", bookId).Find(&book)
+	//log.Println("img : ", book.Image)
+	if db.RowsAffected == 0 {
+		err = errors.New("No record found")
+	}
+	return book, err
 }
 
 func (c productDatabase) DeleteProduct(book domain.Book) error {
-	err := c.DB.Delete(&book).Error
+	err := c.DB.Where("id = ?", book.ID).Delete(&book).Error
 
 	return err
+}
+
+func (c productDatabase) ListBookCovers(bookId int) ([][]byte, error) {
+	var coverList [][]byte
+	err := c.DB.Table("bookcovers").Select("image").Where("book_id = ?", bookId).Find(&coverList).Error
+	return coverList, err
 }

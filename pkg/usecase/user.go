@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"readon/pkg/api/middleware"
+	"readon/pkg/api/helpers"
 	domain "readon/pkg/domain"
 	"readon/pkg/models"
 	interfaces "readon/pkg/repository/interface"
@@ -29,7 +29,7 @@ func (c *userUseCase) Save(user models.SignupData) (domain.User, error) {
 	var User domain.User
 	copier.Copy(&User, &user)
 
-	err := middleware.ValidateUserData(&User)
+	err := helpers.ValidateUserData(&User)
 	if err != nil {
 		return User, err
 	}
@@ -38,6 +38,20 @@ func (c *userUseCase) Save(user models.SignupData) (domain.User, error) {
 		return User, errors.New("Email already has an account ")
 	}
 	User, err = c.userRepo.Save(User)
+	return User, err
+}
+
+func (c *userUseCase) UpdateUser(user models.UpdateData) (domain.User, error) {
+
+	fmt.Println("user:", user)
+	var User domain.User
+	copier.Copy(&User, &user)
+
+	err := helpers.ValidateUserUPdateData(&user)
+	if err != nil {
+		return User, err
+	}
+	User, err = c.userRepo.UpdateUser(User)
 	return User, err
 }
 
@@ -85,7 +99,7 @@ func (c userUseCase) VerifyAndSendOtp(email string) error {
 	if err != nil {
 		return errors.New("Invalid email")
 	}
-	otp, err := middleware.GenerateAndSendOpt(email)
+	otp, err := helpers.GenerateAndSendOpt(email)
 	fmt.Println("otp   : ", otp)
 	if err != nil {
 		return errors.New("could not send otp")

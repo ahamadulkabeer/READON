@@ -87,6 +87,48 @@ func (cr *UserHandler) SaveUser(c *gin.Context) {
 	}
 }
 
+// UpdateUser updates a user.
+// @Summary Update a user
+// @Description Update a user's information
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param user body models.UpdateData true "User data to update"
+// @Success 200 {object} models.UpdateData
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Router /user/update [put]
+func (cr UserHandler) UpdateUser(c *gin.Context) {
+	var user models.UpdateData
+	err := c.BindJSON(&user)
+	if err != nil {
+		errResponse := models.ErrorResponse{
+			Err:    err.Error(),
+			Status: "error while bindin json save user",
+			Hint:   "please try again",
+		}
+		c.JSON(http.StatusBadRequest, errResponse)
+		return
+	}
+	//user.Id = c.MustGet("id").(int)
+	// should get id from context but it wont be available now because no authentication is doing
+	User, err := cr.userUseCase.UpdateUser(user)
+
+	if err != nil {
+		errResponse := models.ErrorResponse{
+			Err:    err.Error(),
+			Status: "couldn't Update users",
+			Hint:   "please try again",
+		}
+		c.JSON(http.StatusInternalServerError, errResponse)
+		return
+	}
+	response := models.UpdateData{}
+	copier.Copy(&response, &User)
+
+	c.JSON(http.StatusOK, response)
+}
+
 // GetSignup godoc
 // @Summary Get HTML page for user signup
 // @Description Retrieve the HTML page for user signup.

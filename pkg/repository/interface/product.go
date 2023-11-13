@@ -7,9 +7,12 @@ import (
 
 type ProductRepository interface {
 	ListProducts() ([]models.ListingBook, error)
-	ListProductsForUser(models.Pagination, int) ([]models.ListingBook, int, error)
-	AddProduct(product domain.Book) error
-	AddImage(image []byte) error
-	GetProduct(int) (domain.Book, error)
+	ListProductsForUser(models.Pagination, int) ([]models.ListingBook, error)
+	GetTotalNoOfproducts(pageDet models.Pagination) (int, error)
+	AddProduct(product domain.Book) (int, error)
+	EditProduct(product domain.Book) (domain.Book, error)
+	AddImage([]byte, int) error
+	GetProduct(int) (models.ListingBook, error)
 	DeleteProduct(domain.Book) error
+	ListBookCovers(bookId int) ([][]byte, error)
 }

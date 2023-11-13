@@ -3,7 +3,7 @@ package usecase
 import (
 	"errors"
 	"fmt"
-	"readon/pkg/api/middleware"
+	"readon/pkg/api/helpers"
 	"readon/pkg/domain"
 	interfaces "readon/pkg/repository/interface"
 	services "readon/pkg/usecase/interface"
@@ -38,7 +38,7 @@ func (c CategoryUseCase) AddCategory(newcategory string) (domain.Category, error
 func (c CategoryUseCase) UpdateCategory(idtoch int, newcategory string) (domain.Category, error) {
 
 	var category = domain.Category{Name: newcategory}
-	err := middleware.ValidateCategory(newcategory)
+	err := helpers.ValidateCategory(newcategory)
 	if err != nil {
 		return category, err
 	}

@@ -7,6 +7,7 @@ import (
 
 type UserRepository interface {
 	Save(user domain.User) (domain.User, error)
+	UpdateUser(user domain.User) (domain.User, error)
 	ListUsers(models.Pagination, int) ([]domain.User, int, error)
 	FindByEmail(email string) (domain.User, error)
 	FindByID(id uint) (domain.User, error)

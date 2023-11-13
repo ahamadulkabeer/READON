@@ -1,9 +1,116 @@
 definitions:
-  domain.Category:
+  domain.Adress:
     properties:
+      addressId:
+        type: integer
+      city:
+        type: string
+      country:
+        type: string
+      district:
+        type: string
+      houseName:
+        type: integer
+      houseNo:
+        type: string
+      landmark:
+        type: string
+      mobile:
+        type: string
+      name:
+        type: string
+      pincode:
+        type: string
+      place:
+        type: string
+      user:
+        $ref: '#/definitions/domain.User'
+      userId:
+        type: integer
+    type: object
+  domain.Book:
+    properties:
+      about:
+        type: string
+      author:
+        type: string
+      category:
+        $ref: '#/definitions/domain.Category'
       categoryID:
         type: integer
+      chapters:
+        type: integer
       id:
+        type: integer
+      premium:
+        type: boolean
+      price:
+        type: number
+      rating:
+        type: number
+      title:
+        type: string
+    type: object
+  domain.Cart:
+    properties:
+      book:
+        $ref: '#/definitions/domain.Book'
+      bookid:
+        description: fk
+        type: integer
+      cartId:
+        description: gorm.Model
+        type: integer
+      quantity:
+        type: integer
+      totalPrice:
+        type: number
+      user:
+        $ref: '#/definitions/domain.User'
+      userid:
+        description: fk
+        type: integer
+    type: object
+  domain.Category:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  domain.Order:
+    properties:
+      adress:
+        $ref: '#/definitions/domain.Adress'
+      adressId:
+        description: fk
+        type: integer
+      book:
+        $ref: '#/definitions/domain.Book'
+      bookId:
+        description: fk
+        type: integer
+      deliveryStatus:
+        type: boolean
+      orderId:
+        type: integer
+      paymentMethoad:
+        $ref: '#/definitions/domain.PaymentMethoad'
+      paymentMethoadId:
+        type: integer
+      quantity:
+        type: integer
+      totalPrice:
+        type: number
+      user:
+        $ref: '#/definitions/domain.User'
+      userId:
+        description: fk
+        type: integer
+    type: object
+  domain.PaymentMethoad:
+    properties:
+      methodId:
         type: integer
       name:
         type: string
@@ -71,10 +178,24 @@ definitions:
     type: object
   models.ListingBook:
     properties:
+      about:
+        type: string
       author:
         type: string
+      category:
+        type: string
+      category_Id:
+        type: integer
       id:
         type: integer
+      image:
+        items:
+          type: integer
+        type: array
+      premium:
+        type: boolean
+      price:
+        type: number
       rating:
         type: number
       title:
@@ -99,14 +220,40 @@ definitions:
         type: array
       name:
         type: string
+      price:
+        type: number
+    type: object
+  models.ProductUpdate:
+    properties:
+      about:
+        type: string
+      author:
+        type: string
+      category:
+        type: integer
+      id:
+        type: integer
+      name:
+        type: string
+      price:
+        type: number
     type: object
   models.SignupData:
     properties:
       email:
         type: string
+      id:
+        type: integer
       name:
         type: string
       password:
+        type: string
+    type: object
+  models.UpdateData:
+    properties:
+      id:
+        type: integer
+      name:
         type: string
     type: object
   models.UselistResponse:
@@ -177,6 +324,41 @@ paths:
       summary: Add a new category
       tags:
       - categories
+  /admin/addcover/{id}:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Add a book cover image for a specific book.
+      parameters:
+      - description: Book ID to associate with the cover image
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Book cover image file
+        in: formData
+        name: image
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Product added with image
+          schema:
+            type: string
+        "400":
+          description: Error while converting category id" or "Error while getting
+            the image file
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Error reading the file" or "Product added but image not added
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Add a book cover image
+      tags:
+      - product
   /admin/addproduct:
     post:
       consumes:
@@ -203,6 +385,11 @@ paths:
         name: category
         required: true
         type: integer
+      - description: Price
+        in: formData
+        name: price
+        required: true
+        type: number
       - description: Product image
         in: formData
         name: image
@@ -345,6 +532,83 @@ paths:
       summary: Delete a category
       tags:
       - categories
+  /admin/editproduct:
+    put:
+      description: Edit product details by providing JSON payload
+      operationId: EditProductDet
+      parameters:
+      - description: Product id
+        in: formData
+        name: id
+        required: true
+        type: integer
+      - description: Product name
+        in: formData
+        name: name
+        type: string
+      - description: Product author
+        in: formData
+        name: author
+        type: string
+      - description: Product description
+        in: formData
+        name: about
+        type: string
+      - description: Price
+        in: formData
+        name: price
+        required: true
+        type: number
+      - description: Product category ID
+        in: formData
+        name: category
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ProductUpdate'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Edit product details
+      tags:
+      - product
+  /admin/listbookcovers/{id}:
+    get:
+      description: List book cover images for a specific book by its ID.
+      parameters:
+      - description: Book ID to retrieve cover images for
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Covers retrieved
+          schema:
+            items:
+              type: integer
+            type: array
+        "400":
+          description: Error while converting book ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Error while getting cover images
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: List book cover images
+      tags:
+      - product
   /admin/updatecategory/{id}:
     put:
       consumes:
@@ -669,6 +933,102 @@ paths:
       summary: Delete a user account
       tags:
       - users
+  /user/addorder:
+    post:
+      description: Place an order for a user with specified details.
+      parameters:
+      - description: User ID
+        in: query
+        name: userid
+        required: true
+        type: integer
+      - description: Payment Method ID
+        in: query
+        name: paymentmethoadid
+        required: true
+        type: integer
+      - description: Address ID
+        in: query
+        name: adressid
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Order placed
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Add an order
+      tags:
+      - order
+  /user/addtocart:
+    post:
+      description: Add a  product cart , if already exist qty++
+      parameters:
+      - description: Product id
+        in: formData
+        name: bookid
+        required: true
+        type: integer
+      - description: user id
+        in: formData
+        name: userid
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Add productto cart
+      tags:
+      - cart
+  /user/book/{id}:
+    get:
+      description: Get details of a product using its ID
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Product details
+          schema:
+            $ref: '#/definitions/models.ListingBook'
+        "400":
+          description: Invalid product ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Product not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get details of a specific product
+      tags:
+      - product
   /user/books:
     get:
       description: Get a list of products
@@ -688,6 +1048,131 @@ paths:
       summary: List products
       tags:
       - product
+  /user/cancelorder:
+    delete:
+      description: Cancel an order for a user with specified details.
+      parameters:
+      - description: User ID
+        in: query
+        name: userid
+        required: true
+        type: integer
+      - description: Order ID
+        in: query
+        name: orderid
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Order cancelled
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Cancel an order
+      tags:
+      - order
+  /user/cart:
+    get:
+      description: Get a user's cart by User ID.
+      parameters:
+      - description: User ID
+        in: query
+        name: userid
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of items in the cart
+          schema:
+            items:
+              $ref: '#/definitions/domain.Cart'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get user's cart
+      tags:
+      - cart
+  /user/deleteitem:
+    delete:
+      description: Delete a product from the cart for a specific user.
+      parameters:
+      - description: User ID
+        in: query
+        name: userid
+        required: true
+        type: integer
+      - description: Product ID
+        in: query
+        name: bookid
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Item deleted
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Delete a product from the cart
+      tags:
+      - cart
+  /user/getorder:
+    get:
+      description: Retrieve details of a specific order for a user.
+      parameters:
+      - description: User ID
+        in: query
+        name: userid
+        required: true
+        type: integer
+      - description: Order ID
+        in: query
+        name: orderid
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Order details
+          schema:
+            $ref: '#/definitions/domain.Order'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get order details
+      tags:
+      - order
   /user/home:
     get:
       description: Retrieve the user home page.
@@ -702,7 +1187,7 @@ paths:
       tags:
       - users
   /user/listbooks:
-    post:
+    get:
       description: Get a list of products with pagination details for user side
       parameters:
       - description: 'Page number for pagination (default: 1)'
@@ -761,6 +1246,73 @@ paths:
       summary: Get user profile
       tags:
       - users
+  /user/update:
+    put:
+      consumes:
+      - application/json
+      description: Update a user's information
+      parameters:
+      - description: User data to update
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateData'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UpdateData'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Update a user
+      tags:
+      - users
+  /user/updatecart:
+    put:
+      description: Update the quantity of a product in the cart for a specific user.
+      parameters:
+      - description: User ID
+        in: query
+        name: userid
+        required: true
+        type: integer
+      - description: Product ID
+        in: query
+        name: bookid
+        required: true
+        type: integer
+      - description: New quantity
+        in: query
+        name: quantity
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Quantity updated
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Update quantity of a product in the cart
+      tags:
+      - cart
   /verifyotp:
     post:
       consumes:

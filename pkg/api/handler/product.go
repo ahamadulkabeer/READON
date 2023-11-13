@@ -1,15 +1,16 @@
 package handler
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"readon/pkg/api/helpers"
 	"readon/pkg/models"
 	services "readon/pkg/usecase/interface"
 	"strconv"
 
-	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/copier"
+	gin "github.com/gin-gonic/gin"
 )
 
 type ProductHandler struct {
@@ -43,6 +44,9 @@ func (cr *ProductHandler) ListProducts(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, errResponse)
 		return
 	}
+	for i := range list {
+		log.Println(i, " : ", list[i])
+	}
 	c.JSON(http.StatusOK, list)
 }
 
@@ -56,7 +60,7 @@ func (cr *ProductHandler) ListProducts(c *gin.Context) {
 // @Param search query string false "Search keyword for products"
 // @Success 200 {object} models.BooksListResponse
 // @Failure 400 {object} models.ErrorResponse
-// @Router /user/listbooks [post]
+// @Router /user/listbooks [get]
 func (cr ProductHandler) ListProductsForUSer(c *gin.Context) { // listing , search , explore user side
 	var pagedetails models.Pagination
 	pagedetails.NewPage = 1
@@ -85,6 +89,9 @@ func (cr ProductHandler) ListProductsForUSer(c *gin.Context) { // listing , sear
 		c.JSON(http.StatusInternalServerError, errResponse)
 		return
 	}
+	for i := range list {
+		log.Println(i, " : ", list[i])
+	}
 	Response := models.BooksListResponse{
 		Pagination: pagedetails,
 		List:       list,
@@ -103,6 +110,7 @@ func (cr ProductHandler) ListProductsForUSer(c *gin.Context) { // listing , sear
 // @Param author formData string true "Product author"
 // @Param about formData string true "Product description"
 // @Param category formData int true "Product category ID"
+// @Param price formData float64 true "Price"
 // @Param image formData file true "Product image"
 // @Success 200 {string} string "Product added with image"
 // @Failure 400 {object} models.ErrorResponse "Invalid request or form data"
@@ -152,10 +160,22 @@ func (cr *ProductHandler) Addproduct(c *gin.Context) {
 		return
 	}
 
+	imagefile, err = helpers.CropImage(imagefile)
+	if err != nil {
+		errResponse := models.ErrorResponse{
+			Err:    err.Error(),
+			Status: "Error while processing iimage file",
+			Hint:   "please try again",
+		}
+		c.JSON(http.StatusInternalServerError, errResponse)
+		return
+	}
+
 	product.Image = imagefile
 	product.Name = c.PostForm("name")
 	product.Author = c.PostForm("author")
 	product.About = c.PostForm("about")
+	product.Price, err = strconv.ParseFloat(c.PostForm("price"), 64)
 	product.CategoryID, err = strconv.Atoi(c.PostForm("category"))
 	if err != nil {
 		errResponse := models.ErrorResponse{
@@ -194,6 +214,103 @@ func (cr *ProductHandler) Addproduct(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+// @Summary Edit product details
+// @Description Edit product details by providing JSON payload
+// @Tags product
+// @Security ApiKeyAuth
+// @ID EditProductDet
+// @Produce json
+// @Param id formData int true "Product id"
+// @Param name formData string false "Product name"
+// @Param author formData string false "Product author"
+// @Param about formData string  false "Product description"
+// @Param price formData float64 true "Price"
+// @Param category formData int true  "Product category ID"
+// @Success 200 {object} models.ProductUpdate "OK"
+// @Failure 500 {object} models.ErrorResponse "Internal Server Error"
+// @Router /admin/editproduct [put]
+func (cr ProductHandler) EditProductDet(c *gin.Context) {
+	var product models.ProductUpdate
+
+	c.Bind(&product)
+	fmt.Println("product :", product)
+	product, err := cr.productUseCase.EditProduct(product)
+	if err != nil {
+		errResponse := models.ErrorResponse{
+			Err:    err.Error(),
+			Status: "couldn't update product",
+			Hint:   "please try again",
+		}
+		c.JSON(http.StatusInternalServerError, errResponse)
+		return
+	}
+
+	c.JSON(http.StatusOK, product)
+
+}
+
+// @Summary Add a book cover image
+// @Description Add a book cover image for a specific book.
+// @Tags product
+// @Accept multipart/form-data
+// @Produce json
+// @Param id path int true "Book ID to associate with the cover image"
+// @Param image formData file true "Book cover image file"
+// @Success 200 {string} string "Product added with image"
+// @Failure 400 {object} models.ErrorResponse "Error while converting category id" or "Error while getting the image file"
+// @Failure 500 {object} models.ErrorResponse "Error reading the file" or "Product added but image not added"
+// @Router /admin/addcover/{id} [post]
+func (cr ProductHandler) AddBookCover(c *gin.Context) {
+
+	bookId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		errResponse := models.ErrorResponse{
+			Err:    err.Error(),
+			Status: "Error while converting category id",
+			Hint:   "please try again",
+		}
+		c.JSON(http.StatusBadRequest, errResponse)
+		return
+	}
+
+	file, _, err := c.Request.FormFile("image")
+
+	if err != nil {
+		errResponse := models.ErrorResponse{
+			Err:    err.Error(),
+			Status: "Error while getting the image file",
+			Hint:   "please try again",
+		}
+		c.JSON(http.StatusBadRequest, errResponse)
+		return
+	}
+
+	defer file.Close()
+	imagefile, err := io.ReadAll(file)
+	if err != nil {
+		errResponse := models.ErrorResponse{
+			Err:    err.Error(),
+			Status: "Error reading the file",
+			Hint:   "please try again",
+		}
+		c.JSON(http.StatusInternalServerError, errResponse)
+		return
+	}
+
+	imageerr := cr.productUseCase.AddBookCover(imagefile, bookId)
+	if imageerr != nil {
+		errResponse := models.ErrorResponse{
+			Err:    err.Error(),
+			Status: "product added  BUt image not added pleasse upload image seperatly",
+			Hint:   "please try again",
+		}
+		c.JSON(http.StatusInternalServerError, errResponse)
+		return
+	}
+	response := "product added with image"
+	c.JSON(http.StatusOK, response)
+}
+
 // GetProduct godoc
 // @Summary Get details of a specific product
 // @Description Get details of a product using its ID
@@ -204,7 +321,6 @@ func (cr *ProductHandler) Addproduct(c *gin.Context) {
 // @Failure 400 {object} models.ErrorResponse "Invalid product ID"
 // @Failure 404 {object} models.ErrorResponse "Product not found"
 // @Router /user/book/{id} [get]
-
 func (cr ProductHandler) GetProduct(c *gin.Context) {
 	bookId := c.Param("id")
 
@@ -229,10 +345,12 @@ func (cr ProductHandler) GetProduct(c *gin.Context) {
 		c.JSON(http.StatusNotFound, errResponse)
 		return
 	}
-	var response models.ListingBook
-	copier.Copy(&response, book)
+	//imageDataBase64 := base64.StdEncoding.EncodeToString(book.Image)
+	//log.Println("img : ", imageDataBase64)
+	//var response models.ListingBook
+	//copier.Copy(&response, book)
 
-	c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, book)
 }
 
 // GetProduct godoc
@@ -271,4 +389,41 @@ func (cr ProductHandler) DeleteProduct(c *gin.Context) {
 	}
 	response := "book deleted succresfully || on id : " + bookId
 	c.JSON(http.StatusOK, response)
+}
+
+// @Summary List book cover images
+// @Description List book cover images for a specific book by its ID.
+// @Tags product
+// @Produce json
+// @Param id path int true "Book ID to retrieve cover images for"
+// @Success 200 {object} []byte  "Covers retrieved"
+// @Failure 400 {object} models.ErrorResponse "Error while converting book ID"
+// @Failure 500 {object} models.ErrorResponse "Error while getting cover images"
+// @Router /admin/listbookcovers/{id} [get]
+func (cr ProductHandler) ListBookCovers(c *gin.Context) {
+	paramId := c.Param("id")
+	bookId, err := strconv.Atoi(paramId)
+	if err != nil {
+		errResponse := models.ErrorResponse{
+			Err:    err.Error(),
+			Status: "Error while converting category id",
+			Hint:   "please try again",
+		}
+		c.JSON(http.StatusBadRequest, errResponse)
+		return
+	}
+	list, err := cr.productUseCase.ListBookCovers(bookId)
+	if err != nil {
+		errResponse := models.ErrorResponse{
+			Err:    err.Error(),
+			Status: "err while getting product list",
+			Hint:   "please try again",
+		}
+
+		c.JSON(http.StatusInternalServerError, errResponse)
+		return
+	}
+
+	c.JSON(http.StatusOK, list)
+
 }

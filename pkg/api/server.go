@@ -13,7 +13,7 @@ type ServerHTTP struct {
 	engine *gin.Engine
 }
 
-func NewServerHTTP(userHandler *handler.UserHandler, productHandler *handler.ProductHandler, adminHandler *handler.AdminHandler, categoryHandler *handler.CategoryHandler) *ServerHTTP {
+func NewServerHTTP(userHandler *handler.UserHandler, productHandler *handler.ProductHandler, adminHandler *handler.AdminHandler, categoryHandler *handler.CategoryHandler, cartHandler *handler.CartHandler, OrderHandler *handler.OrderHAndler) *ServerHTTP {
 	engine := gin.New()
 
 	// Use logger from Gin
@@ -39,14 +39,14 @@ func NewServerHTTP(userHandler *handler.UserHandler, productHandler *handler.Pro
 
 	users.DELETE("/account/:id", userHandler.DeleteUserAccount)
 	users.GET("/profile/:id", userHandler.GetUserProfile)
-	/*users.PUT("/editprofile",userHandler.EditProfile)
-	users.GET("/readbook", userHandler.ReadBook)
+	users.PUT("/update", userHandler.UpdateUser)
+	/*users.GET("/readbook", userHandler.ReadBook)
 	users.GET("/premium",userHandler.GetPremium)
 	users.POST("/premium",userHandler.MakePremium)*/
 	users.GET("/home", userHandler.UserHome, productHandler.ListProducts)
 	users.GET("/books", productHandler.ListProducts)
 	users.GET("/book/:id", productHandler.GetProduct)
-	users.POST("/listbooks", productHandler.ListProductsForUSer)
+	users.GET("/listbooks", productHandler.ListProductsForUSer)
 
 	//admin handlers
 	engine.GET("/adminlogin", adminHandler.GetLogin)
@@ -58,6 +58,9 @@ func NewServerHTTP(userHandler *handler.UserHandler, productHandler *handler.Pro
 	admin.GET("/users", adminHandler.ListUsers)
 	admin.GET("/admins", adminHandler.ListAdmins)
 	admin.POST("/addproduct", productHandler.Addproduct)
+	admin.PUT("/editproduct", productHandler.EditProductDet)
+	admin.POST("/addcover/:id", productHandler.AddBookCover)
+	admin.GET("/listbookcovers/:id", productHandler.ListBookCovers)
 	admin.DELETE("/deletebook/:id", productHandler.DeleteProduct)
 
 	//categories
@@ -65,6 +68,17 @@ func NewServerHTTP(userHandler *handler.UserHandler, productHandler *handler.Pro
 	admin.POST("/addcategory", categoryHandler.AddCategory)
 	admin.PUT("/updatecategory/:id", categoryHandler.UpdateCategory)
 	admin.DELETE("/deletecategory/:id", categoryHandler.DeleteCategory)
+
+	// cart
+	users.POST("/addtocart", cartHandler.AddToCart)
+	users.GET("/cart", cartHandler.GetCart)
+	users.PUT("/updatecart", cartHandler.UpdateQuantity)
+	users.DELETE("/deleteitem", cartHandler.DeleteFromCart)
+
+	// order
+	users.POST("/addorder", OrderHandler.AddOrder)
+	users.DELETE("/cancelorder", OrderHandler.CancelOrder)
+	users.GET("/getorder", OrderHandler.GetOrder)
 
 	return &ServerHTTP{engine: engine}
 }

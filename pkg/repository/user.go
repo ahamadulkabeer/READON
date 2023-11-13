@@ -42,6 +42,12 @@ func (c *userDatabase) Save(user domain.User) (domain.User, error) {
 	return user, err
 }
 
+func (c *userDatabase) UpdateUser(user domain.User) (domain.User, error) {
+	err := c.DB.Model(&domain.User{}).Where("id = ?", user.ID).Update("name", user.Name).Error
+
+	return user, err
+}
+
 func (c *userDatabase) Authorise(user models.Userlogindata) (int, bool, error) {
 	var users domain.User
 	result := c.DB.Where("email = ? AND password = ? AND permission = ?", user.Email, user.Password, true).Limit(1).Find(&users)
