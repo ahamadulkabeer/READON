@@ -8,12 +8,14 @@ import (
 )
 
 type CartUseCase struct {
-	CartRepo interfaces.CartRepository
+	CartRepo    interfaces.CartRepository
+	ProductRepo interfaces.ProductRepository
 }
 
-func NewCartUseCase(repo interfaces.CartRepository) services.CartUseCase {
+func NewCartUseCase(crepo interfaces.CartRepository, prepo interfaces.ProductRepository) services.CartUseCase {
 	return &CartUseCase{
-		CartRepo: repo,
+		CartRepo:    crepo,
+		ProductRepo: prepo,
 	}
 }
 
@@ -22,7 +24,6 @@ func (c CartUseCase) AddItem(item domain.Cart, userId int) error {
 	if err != nil {
 		return err
 	}
-
 	if count != 0 {
 		count++
 		err = c.CartRepo.UpdateQty(userId, int(item.BookId), count)
@@ -30,6 +31,10 @@ func (c CartUseCase) AddItem(item domain.Cart, userId int) error {
 			return err
 		}
 		return nil
+	}
+	item.Price, err = c.ProductRepo.GetPrice(int(item.BookId))
+	if err != nil {
+		return err
 	}
 	err = c.CartRepo.AddItem(item, userId)
 	if err != nil {

@@ -1,5 +1,5 @@
 definitions:
-  domain.Adress:
+  domain.Address:
     properties:
       addressId:
         type: integer
@@ -10,7 +10,7 @@ definitions:
       district:
         type: string
       houseName:
-        type: integer
+        type: string
       houseNo:
         type: string
       landmark:
@@ -28,89 +28,9 @@ definitions:
       userId:
         type: integer
     type: object
-  domain.Book:
-    properties:
-      about:
-        type: string
-      author:
-        type: string
-      category:
-        $ref: '#/definitions/domain.Category'
-      categoryID:
-        type: integer
-      chapters:
-        type: integer
-      id:
-        type: integer
-      premium:
-        type: boolean
-      price:
-        type: number
-      rating:
-        type: number
-      title:
-        type: string
-    type: object
-  domain.Cart:
-    properties:
-      book:
-        $ref: '#/definitions/domain.Book'
-      bookid:
-        description: fk
-        type: integer
-      cartId:
-        description: gorm.Model
-        type: integer
-      quantity:
-        type: integer
-      totalPrice:
-        type: number
-      user:
-        $ref: '#/definitions/domain.User'
-      userid:
-        description: fk
-        type: integer
-    type: object
   domain.Category:
     properties:
       id:
-        type: integer
-      name:
-        type: string
-    type: object
-  domain.Order:
-    properties:
-      adress:
-        $ref: '#/definitions/domain.Adress'
-      adressId:
-        description: fk
-        type: integer
-      book:
-        $ref: '#/definitions/domain.Book'
-      bookId:
-        description: fk
-        type: integer
-      deliveryStatus:
-        type: boolean
-      orderId:
-        type: integer
-      paymentMethoad:
-        $ref: '#/definitions/domain.PaymentMethoad'
-      paymentMethoadId:
-        type: integer
-      quantity:
-        type: integer
-      totalPrice:
-        type: number
-      user:
-        $ref: '#/definitions/domain.User'
-      userId:
-        description: fk
-        type: integer
-    type: object
-  domain.PaymentMethoad:
-    properties:
-      methodId:
         type: integer
       name:
         type: string
@@ -176,6 +96,46 @@ definitions:
       status:
         type: string
     type: object
+  models.ListAddress:
+    properties:
+      addressId:
+        type: integer
+      city:
+        type: string
+      country:
+        type: string
+      district:
+        type: string
+      houseName:
+        type: string
+      houseNo:
+        type: string
+      landmark:
+        type: string
+      mobile:
+        type: string
+      name:
+        type: string
+      pincode:
+        type: string
+      place:
+        type: string
+      userId:
+        type: integer
+    type: object
+  models.ListCart:
+    properties:
+      bookId:
+        type: integer
+      cartId:
+        type: integer
+      price:
+        type: number
+      quantity:
+        type: integer
+      userId:
+        type: integer
+    type: object
   models.ListingBook:
     properties:
       about:
@@ -205,6 +165,27 @@ definitions:
     properties:
       name:
         type: string
+    type: object
+  models.OrdersListing:
+    properties:
+      addressId:
+        type: integer
+      bookId:
+        type: integer
+      deliveryStatus:
+        type: boolean
+      id:
+        type: integer
+      paymentMethodId:
+        type: integer
+      paymentStatus:
+        type: string
+      quantity:
+        type: integer
+      totalPrice:
+        type: number
+      userId:
+        type: integer
     type: object
   models.Product:
     properties:
@@ -344,7 +325,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: Product added with image
+          description: OK
           schema:
             type: string
         "400":
@@ -432,6 +413,37 @@ paths:
       summary: List Admins
       tags:
       - Admin
+  /admin/allorders:
+    get:
+      description: Retrieve all orders based on a filter.
+      parameters:
+      - description: Filter parameter
+        in: query
+        name: filter
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of orders
+          schema:
+            items:
+              items:
+                $ref: '#/definitions/models.OrdersListing'
+              type: array
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get all orders
+      tags:
+      - order
   /admin/blockuser/{id}:
     put:
       description: Block or unblock a user by ID
@@ -933,6 +945,36 @@ paths:
       summary: Delete a user account
       tags:
       - users
+  /user/addaddress:
+    post:
+      consumes:
+      - application/json
+      description: Add a new address for a user.
+      parameters:
+      - description: Address details
+        in: body
+        name: address
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Address'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Address added
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Add address
+      tags:
+      - address
   /user/addorder:
     post:
       description: Place an order for a user with specified details.
@@ -1096,7 +1138,7 @@ paths:
           description: List of items in the cart
           schema:
             items:
-              $ref: '#/definitions/domain.Cart'
+              $ref: '#/definitions/models.ListCart'
             type: array
         "400":
           description: Bad Request
@@ -1109,6 +1151,33 @@ paths:
       summary: Get user's cart
       tags:
       - cart
+  /user/deleteaddress:
+    delete:
+      description: Delete an address by its ID.
+      parameters:
+      - description: Address ID
+        in: query
+        name: addressid
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Address deleted
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Delete address
+      tags:
+      - address
   /user/deleteitem:
     delete:
       description: Delete a product from the cart for a specific user.
@@ -1141,6 +1210,33 @@ paths:
       summary: Delete a product from the cart
       tags:
       - cart
+  /user/getaddress:
+    get:
+      description: Retrieve an address by its ID.
+      parameters:
+      - description: Address ID
+        in: query
+        name: addressid
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Address details
+          schema:
+            $ref: '#/definitions/models.ListAddress'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get address
+      tags:
+      - address
   /user/getorder:
     get:
       description: Retrieve details of a specific order for a user.
@@ -1161,7 +1257,7 @@ paths:
         "200":
           description: Order details
           schema:
-            $ref: '#/definitions/domain.Order'
+            $ref: '#/definitions/models.OrdersListing'
         "400":
           description: Bad Request
           schema:
@@ -1186,6 +1282,37 @@ paths:
       summary: Get user home page
       tags:
       - users
+  /user/listaddresses:
+    get:
+      description: Retrieve a list of addresses for a user by user ID.
+      parameters:
+      - description: User ID
+        in: query
+        name: userid
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of addresses
+          schema:
+            items:
+              items:
+                $ref: '#/definitions/models.ListAddress'
+              type: array
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: List addresses
+      tags:
+      - address
   /user/listbooks:
     get:
       description: Get a list of products with pagination details for user side
@@ -1194,7 +1321,7 @@ paths:
         in: query
         name: page
         type: integer
-      - description: Sort order for products (e.g., name ASC, price DESC)
+      - description: 'filters the books by category , category id '
         in: query
         name: filter
         type: integer
@@ -1216,6 +1343,52 @@ paths:
       summary: List, search, and explore products for a user
       tags:
       - product
+  /user/listorder:
+    get:
+      description: Retrieve all orders for a user.
+      parameters:
+      - description: User ID
+        in: query
+        name: userid
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Order details
+          schema:
+            items:
+              $ref: '#/definitions/models.OrdersListing'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: list a users orders
+      tags:
+      - order
+  /user/paymentlink:
+    get:
+      description: Delete a product from the cart for a specific user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: check out
+      tags:
+      - payment
   /user/profile/{id}:
     get:
       consumes:
@@ -1276,6 +1449,36 @@ paths:
       summary: Update a user
       tags:
       - users
+  /user/updateaddress:
+    put:
+      consumes:
+      - application/json
+      description: Update an existing address for a user.
+      parameters:
+      - description: Updated address details
+        in: body
+        name: address
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Address'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Address updated
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Update address
+      tags:
+      - address
   /user/updatecart:
     put:
       description: Update the quantity of a product in the cart for a specific user.

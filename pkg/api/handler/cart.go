@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/copier"
 )
 
 type CartHandler struct {
@@ -31,7 +32,7 @@ func NewCartHandler(usecase services.CartUseCase) *CartHandler {
 // @Success 200 {string} string
 // @Failure 400 {object} models.ErrorResponse
 // @Failure 500 {object} models.ErrorResponse
-// @Router /user/addtocart [post]
+// @Router /user/addtocart [postUPI Payment Links is not supported in Test M]
 func (cr CartHandler) AddToCart(c *gin.Context) {
 	var item domain.Cart
 
@@ -67,7 +68,7 @@ func (cr CartHandler) AddToCart(c *gin.Context) {
 // @Tags cart
 // @Produce json
 // @Param userid query int true "User ID"
-// @Success 200 {object} []domain.Cart "List of items in the cart"
+// @Success 200 {object} []models.ListCart "List of items in the cart"
 // @Failure 400 {object} models.ErrorResponse
 // @Failure 500 {object} models.ErrorResponse
 // @Router /user/cart [get]
@@ -86,7 +87,7 @@ func (cr CartHandler) GetCart(c *gin.Context) {
 
 	}
 
-	list, err := cr.CartUseCase.GetCart(userid)
+	cart, err := cr.CartUseCase.GetCart(userid)
 	if err != nil {
 		errResponse := models.ErrorResponse{
 			Err:    err.Error(),
@@ -96,7 +97,9 @@ func (cr CartHandler) GetCart(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, errResponse)
 		return
 	}
-	c.JSON(http.StatusOK, list)
+	var carts []models.ListCart
+	copier.Copy(&carts, &cart)
+	c.JSON(http.StatusOK, carts)
 }
 
 // @Summary Update quantity of a product in the cart

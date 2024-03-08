@@ -13,15 +13,17 @@ type ServerHTTP struct {
 	engine *gin.Engine
 }
 
-func NewServerHTTP(userHandler *handler.UserHandler, productHandler *handler.ProductHandler, adminHandler *handler.AdminHandler, categoryHandler *handler.CategoryHandler, cartHandler *handler.CartHandler, OrderHandler *handler.OrderHAndler) *ServerHTTP {
+func NewServerHTTP(userHandler *handler.UserHandler, productHandler *handler.ProductHandler, adminHandler *handler.AdminHandler, categoryHandler *handler.CategoryHandler, cartHandler *handler.CartHandler, orderHandler *handler.OrderHAndler, addressHandler *handler.AddressHandler) *ServerHTTP {
 	engine := gin.New()
+
+	//engine.LoadHTMLGlob("../templates/*")
 
 	// Use logger from Gin
 	engine.Use(gin.Logger())
 
 	// Swagger docs
 	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
-	//engine.LoadHTMLGlob("pkg/templates/*.html")
+	engine.LoadHTMLGlob("pkg/templates/*.html")
 
 	// Auth middleware
 	users := engine.Group("/user")
@@ -62,6 +64,7 @@ func NewServerHTTP(userHandler *handler.UserHandler, productHandler *handler.Pro
 	admin.POST("/addcover/:id", productHandler.AddBookCover)
 	admin.GET("/listbookcovers/:id", productHandler.ListBookCovers)
 	admin.DELETE("/deletebook/:id", productHandler.DeleteProduct)
+	admin.GET("/allorders", orderHandler.GetAllOrders)
 
 	//categories
 	admin.GET("/categorylist", categoryHandler.ListCategories)
@@ -76,10 +79,20 @@ func NewServerHTTP(userHandler *handler.UserHandler, productHandler *handler.Pro
 	users.DELETE("/deleteitem", cartHandler.DeleteFromCart)
 
 	// order
-	users.POST("/addorder", OrderHandler.AddOrder)
-	users.DELETE("/cancelorder", OrderHandler.CancelOrder)
-	users.GET("/getorder", OrderHandler.GetOrder)
+	users.POST("/addorder", orderHandler.AddOrder)
+	users.DELETE("/cancelorder", orderHandler.CancelOrder)
+	users.GET("/getorder", orderHandler.GetOrder)
+	users.GET("/listorder", orderHandler.ListOrders)
 
+	// address
+	users.POST("/addaddress", addressHandler.AddAddress)
+	users.PUT("/updateaddress", addressHandler.UpdateAddress)
+	users.DELETE("/deleteaddress", addressHandler.DeleteAddress)
+	users.GET("/getaddress", addressHandler.GetAddress)
+	users.GET("/listaddresses", addressHandler.ListAddress)
+
+	//
+	users.POST("/verifypayment", orderHandler.VerifyPayment)
 	return &ServerHTTP{engine: engine}
 }
 

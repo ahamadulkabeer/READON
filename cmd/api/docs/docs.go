@@ -92,7 +92,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Product added with image",
+                        "description": "OK",
                         "schema": {
                             "type": "string"
                         }
@@ -209,6 +209,53 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/models.Admin"
                             }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/allorders": {
+            "get": {
+                "description": "Retrieve all orders based on a filter.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "order"
+                ],
+                "summary": "Get all orders",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Filter parameter",
+                        "name": "filter",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of orders",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/models.OrdersListing"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "500": {
@@ -983,6 +1030,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/user/addaddress": {
+            "post": {
+                "description": "Add a new address for a user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "address"
+                ],
+                "summary": "Add address",
+                "parameters": [
+                    {
+                        "description": "Address details",
+                        "name": "address",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.Address"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Address added",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/user/addorder": {
             "post": {
                 "description": "Place an order for a user with specified details.",
@@ -1229,8 +1322,49 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/domain.Cart"
+                                "$ref": "#/definitions/models.ListCart"
                             }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/user/deleteaddress": {
+            "delete": {
+                "description": "Delete an address by its ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "address"
+                ],
+                "summary": "Delete address",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Address ID",
+                        "name": "addressid",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Address deleted",
+                        "schema": {
+                            "type": "string"
                         }
                     },
                     "400": {
@@ -1296,6 +1430,47 @@ const docTemplate = `{
                 }
             }
         },
+        "/user/getaddress": {
+            "get": {
+                "description": "Retrieve an address by its ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "address"
+                ],
+                "summary": "Get address",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Address ID",
+                        "name": "addressid",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Address details",
+                        "schema": {
+                            "$ref": "#/definitions/models.ListAddress"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/user/getorder": {
             "get": {
                 "description": "Retrieve details of a specific order for a user.",
@@ -1326,7 +1501,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Order details",
                         "schema": {
-                            "$ref": "#/definitions/domain.Order"
+                            "$ref": "#/definitions/models.OrdersListing"
                         }
                     },
                     "400": {
@@ -1364,6 +1539,53 @@ const docTemplate = `{
                 }
             }
         },
+        "/user/listaddresses": {
+            "get": {
+                "description": "Retrieve a list of addresses for a user by user ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "address"
+                ],
+                "summary": "List addresses",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "userid",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of addresses",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/models.ListAddress"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/user/listbooks": {
             "get": {
                 "description": "Get a list of products with pagination details for user side",
@@ -1383,7 +1605,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "description": "Sort order for products (e.g., name ASC, price DESC)",
+                        "description": "filters the books by category , category id ",
                         "name": "filter",
                         "in": "query"
                     },
@@ -1405,6 +1627,76 @@ const docTemplate = `{
                         "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/user/listorder": {
+            "get": {
+                "description": "Retrieve all orders for a user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "order"
+                ],
+                "summary": "list a users orders",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "userid",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Order details",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.OrdersListing"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/user/paymentlink": {
+            "get": {
+                "description": "Delete a product from the cart for a specific user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "payment"
+                ],
+                "summary": "check out",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
@@ -1484,6 +1776,52 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/models.UpdateData"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/user/updateaddress": {
+            "put": {
+                "description": "Update an existing address for a user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "address"
+                ],
+                "summary": "Update address",
+                "parameters": [
+                    {
+                        "description": "Updated address details",
+                        "name": "address",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.Address"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Address updated",
+                        "schema": {
+                            "type": "string"
                         }
                     },
                     "400": {
@@ -1604,7 +1942,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "domain.Adress": {
+        "domain.Address": {
             "type": "object",
             "properties": {
                 "addressId": {
@@ -1620,7 +1958,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "houseName": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "houseNo": {
                     "type": "string"
@@ -1648,129 +1986,10 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.Book": {
-            "type": "object",
-            "properties": {
-                "about": {
-                    "type": "string"
-                },
-                "author": {
-                    "type": "string"
-                },
-                "category": {
-                    "$ref": "#/definitions/domain.Category"
-                },
-                "categoryID": {
-                    "type": "integer"
-                },
-                "chapters": {
-                    "type": "integer"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "premium": {
-                    "type": "boolean"
-                },
-                "price": {
-                    "type": "number"
-                },
-                "rating": {
-                    "type": "number"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "domain.Cart": {
-            "type": "object",
-            "properties": {
-                "book": {
-                    "$ref": "#/definitions/domain.Book"
-                },
-                "bookid": {
-                    "description": "fk",
-                    "type": "integer"
-                },
-                "cartId": {
-                    "description": "gorm.Model",
-                    "type": "integer"
-                },
-                "quantity": {
-                    "type": "integer"
-                },
-                "totalPrice": {
-                    "type": "number"
-                },
-                "user": {
-                    "$ref": "#/definitions/domain.User"
-                },
-                "userid": {
-                    "description": "fk",
-                    "type": "integer"
-                }
-            }
-        },
         "domain.Category": {
             "type": "object",
             "properties": {
                 "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "domain.Order": {
-            "type": "object",
-            "properties": {
-                "adress": {
-                    "$ref": "#/definitions/domain.Adress"
-                },
-                "adressId": {
-                    "description": "fk",
-                    "type": "integer"
-                },
-                "book": {
-                    "$ref": "#/definitions/domain.Book"
-                },
-                "bookId": {
-                    "description": "fk",
-                    "type": "integer"
-                },
-                "deliveryStatus": {
-                    "type": "boolean"
-                },
-                "orderId": {
-                    "type": "integer"
-                },
-                "paymentMethoad": {
-                    "$ref": "#/definitions/domain.PaymentMethoad"
-                },
-                "paymentMethoadId": {
-                    "type": "integer"
-                },
-                "quantity": {
-                    "type": "integer"
-                },
-                "totalPrice": {
-                    "type": "number"
-                },
-                "user": {
-                    "$ref": "#/definitions/domain.User"
-                },
-                "userId": {
-                    "description": "fk",
-                    "type": "integer"
-                }
-            }
-        },
-        "domain.PaymentMethoad": {
-            "type": "object",
-            "properties": {
-                "methodId": {
                     "type": "integer"
                 },
                 "name": {
@@ -1871,6 +2090,67 @@ const docTemplate = `{
                 }
             }
         },
+        "models.ListAddress": {
+            "type": "object",
+            "properties": {
+                "addressId": {
+                    "type": "integer"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "country": {
+                    "type": "string"
+                },
+                "district": {
+                    "type": "string"
+                },
+                "houseName": {
+                    "type": "string"
+                },
+                "houseNo": {
+                    "type": "string"
+                },
+                "landmark": {
+                    "type": "string"
+                },
+                "mobile": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "pincode": {
+                    "type": "string"
+                },
+                "place": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.ListCart": {
+            "type": "object",
+            "properties": {
+                "bookId": {
+                    "type": "integer"
+                },
+                "cartId": {
+                    "type": "integer"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "quantity": {
+                    "type": "integer"
+                },
+                "userId": {
+                    "type": "integer"
+                }
+            }
+        },
         "models.ListingBook": {
             "type": "object",
             "properties": {
@@ -1914,6 +2194,38 @@ const docTemplate = `{
             "properties": {
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "models.OrdersListing": {
+            "type": "object",
+            "properties": {
+                "addressId": {
+                    "type": "integer"
+                },
+                "bookId": {
+                    "type": "integer"
+                },
+                "deliveryStatus": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "paymentMethodId": {
+                    "type": "integer"
+                },
+                "paymentStatus": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "integer"
+                },
+                "totalPrice": {
+                    "type": "number"
+                },
+                "userId": {
+                    "type": "integer"
                 }
             }
         },

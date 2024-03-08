@@ -56,7 +56,7 @@ func (cr *ProductHandler) ListProducts(c *gin.Context) {
 // @Produce json
 // @Tags product
 // @Param page query int false "Page number for pagination (default: 1)"
-// @Param filter query int false "Sort order for products (e.g., name ASC, price DESC)"
+// @Param filter query int false "filters the books by category , category id "
 // @Param search query string false "Search keyword for products"
 // @Success 200 {object} models.BooksListResponse
 // @Failure 400 {object} models.ErrorResponse
@@ -256,7 +256,7 @@ func (cr ProductHandler) EditProductDet(c *gin.Context) {
 // @Produce json
 // @Param id path int true "Book ID to associate with the cover image"
 // @Param image formData file true "Book cover image file"
-// @Success 200 {string} string "Product added with image"
+// @Success 200 {string} string
 // @Failure 400 {object} models.ErrorResponse "Error while converting category id" or "Error while getting the image file"
 // @Failure 500 {object} models.ErrorResponse "Error reading the file" or "Product added but image not added"
 // @Router /admin/addcover/{id} [post]
@@ -296,7 +296,19 @@ func (cr ProductHandler) AddBookCover(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, errResponse)
 		return
 	}
-
+	imagefile, err = helpers.CropImage(imagefile)
+	if err != nil {
+		errResponse := models.ErrorResponse{
+			Err:    err.Error(),
+			Status: "Error while processing iimage file",
+			Hint:   "please try again",
+		}
+		c.JSON(http.StatusInternalServerError, errResponse)
+		return
+	}
+	// dont have to explicitly encode into base64 as gin will automatically do it when passin g as json.
+	//imageDataBase64 := base64.StdEncoding.EncodeToString(imagefile)
+	//fmt.Println("image : ", imageDataBase64)
 	imageerr := cr.productUseCase.AddBookCover(imagefile, bookId)
 	if imageerr != nil {
 		errResponse := models.ErrorResponse{
@@ -307,7 +319,7 @@ func (cr ProductHandler) AddBookCover(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, errResponse)
 		return
 	}
-	response := "product added with image"
+	response := "BookCover added successfully"
 	c.JSON(http.StatusOK, response)
 }
 
@@ -423,7 +435,7 @@ func (cr ProductHandler) ListBookCovers(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, errResponse)
 		return
 	}
-
+	fmt.Println("image : ", list[0])
 	c.JSON(http.StatusOK, list)
 
 }

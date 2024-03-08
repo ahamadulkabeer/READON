@@ -48,17 +48,17 @@ func ValidateUserUPdateData(user *models.UpdateData) error {
 func ValidateCategory(category string) error {
 
 	if category == "" {
-		return errors.New("String must not be empty")
+		return errors.New("category must not be empty")
 	}
 	if len(category) < 2 || len(category) > 20 {
-		return errors.New("String must be atleast 2 letters ; max 20")
+		return errors.New("category must be atleast 2 letters ; max 20")
 	}
 	match, err := regexp.MatchString("^[a-zA-Z0-9]*$", category)
 	if err != nil {
 		return err
 	}
 	if !match {
-		return fmt.Errorf("String must contain only letters and digits")
+		return fmt.Errorf("category must contain only letters and digits")
 	}
 	return nil
 }

@@ -13,6 +13,7 @@ type UserRepository interface {
 	FindByID(id uint) (domain.User, error)
 	DeleteUser(user domain.User) error
 	BlockOrUnBlock(int) bool
+
 	Authorise(user models.Userlogindata) (int, bool, error)
 	CheckForEmail(string) error
 	SaveOtp(string, string) error

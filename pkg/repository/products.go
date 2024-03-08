@@ -123,3 +123,12 @@ func (c productDatabase) ListBookCovers(bookId int) ([][]byte, error) {
 	err := c.DB.Table("bookcovers").Select("image").Where("book_id = ?", bookId).Find(&coverList).Error
 	return coverList, err
 }
+
+func (c productDatabase) GetPrice(bookId int) (float64, error) {
+	var price float64
+	err := c.DB.Model(&domain.Book{}).Select("price").Where("id = ? ", bookId).First(&price).Error
+	if err != nil {
+		return 0.0, err
+	}
+	return price, err
+}

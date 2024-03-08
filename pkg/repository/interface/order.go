@@ -2,6 +2,7 @@ package interfaces
 
 import (
 	"readon/pkg/domain"
+	"time"
 )
 
 type OrderRepository interface {
@@ -9,4 +10,6 @@ type OrderRepository interface {
 	CancelOrder(orderId, userId int) error
 	GetOrders(UserID int) ([]domain.Order, error)
 	GetOrder(userId, orderId int) (domain.Order, error)
+	GetAllOrders(start, end time.Time) ([]domain.Order, error)
+	UpdatePaymentStatus(PaymentId string) error
 }

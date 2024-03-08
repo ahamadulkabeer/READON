@@ -4,44 +4,32 @@ import (
 	"bytes"
 	"fmt"
 	"image"
+	"image/draw"
 	"image/jpeg"
 	"os"
-
-	"github.com/fogleman/gg"
+	"time"
 )
 
+type SubImager interface {
+	SubImage(r image.Rectangle) image.Image
+}
+
 func cropToRatio(img image.Image) image.Image {
-	// Open the image
-	//imgPath := "your_image.jpg" // Change this to the path of your image
-	//img, err := gg.LoadImage(imgPath)
-	//if err != nil {
-	//	panic(err)
-	//}
+	ratio := 0.75
+	bounds := img.Bounds()
+	targetWidth := float64(bounds.Dy()) * ratio
+	offsetX := (float64(bounds.Dx()) - targetWidth) / 2
 
-	// Calculate the dimensions for the cropped image
-	targetWidth := 1.5 * float64(img.Bounds().Dx())
-	targetHeight := float64(img.Bounds().Dy())
+	rect := image.Rect(
+		int(offsetX),
+		0,
+		int(offsetX+targetWidth),
+		bounds.Dy(),
+	)
 
-	// Initialize a new context with the desired dimensions
-	ctx := gg.NewContext(int(targetWidth), int(targetHeight))
-
-	// Calculate the cropping area
-	cropX := (float64(img.Bounds().Dx()) - targetWidth) / 2
-	cropY := 0.0
-
-	// Draw the cropped portion to the new context
-	ctx.DrawImage(img, int(-cropX), int(-cropY))
-
-	// Save the cropped image to a new file
-	outputFilePath := "/home/kabeer/Documents/READON/img/cropped_image001.jpg" // Change this to the desired output file path
-	ctx.SavePNG(outputFilePath)
-	if err := ctx.SavePNG(outputFilePath); err != nil {
-		panic(err)
-	}
-
-	// Print a success message
-	//println("Image cropped and saved to", outputFilePath)
-	return img
+	croppedImg := image.NewRGBA(rect)
+	draw.Draw(croppedImg, croppedImg.Bounds(), img, rect.Min, draw.Src)
+	return croppedImg
 }
 
 // Example code for cropping an image to a specific ratio
@@ -72,7 +60,7 @@ func CropImage(imagetocrop []byte) ([]byte, error) {
 	var buffer bytes.Buffer
 
 	// Encode the cropped image as JPEG (or your desired format)
-	err = jpeg.Encode(&buffer, croppedImage, nil) // Use "image/png" for PNG encoding
+	err = jpeg.Encode(&buffer, croppedImage, nil)
 	if err != nil {
 		fmt.Println("Error encoding the cropped image:", err)
 		return nil, err
@@ -81,10 +69,8 @@ func CropImage(imagetocrop []byte) ([]byte, error) {
 	// Get the bytes from the buffer
 	croppedImageData := buffer.Bytes()
 
-	outputFilePath := "/home/kabeer/Documents/READON/img/cropped_image002.jpg"
-
 	// Save the cropped image
-	err = SaveCroppedImage(croppedImageData, outputFilePath)
+	err = SaveCroppedImage(croppedImageData)
 	if err != nil {
 		return nil, err
 	}
@@ -92,9 +78,11 @@ func CropImage(imagetocrop []byte) ([]byte, error) {
 	return croppedImageData, nil
 }
 
-func SaveCroppedImage(croppedImageData []byte, outputFilePath string) error {
+func SaveCroppedImage(croppedImageData []byte) error {
+	outputFilePath := "/home/kabeer/Documents/READON/img/cropped/"
 	// Create or open the output file for writing
-	outputFile, err := os.Create(outputFilePath)
+	filename := "IMG" + time.Now().Format("2006-01-02_03-04-05PM") + ".jpeg"
+	outputFile, err := os.Create(outputFilePath + filename)
 	if err != nil {
 		fmt.Println("Error creating the output image file:", err)
 		return err

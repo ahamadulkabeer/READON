@@ -88,3 +88,39 @@ type BooksListResponse struct {
 	Pagination
 	List []ListingBook
 }
+
+type ListCart struct {
+	CartId   uint
+	UserId   uint
+	BookId   uint
+	Quantity int
+	Price    float64
+}
+
+type ListAddress struct {
+	AddressId uint `gorm:"primarykey"`
+	UserId    uint
+	Name      string `gorm:"not null"`
+	HouseNo   string
+	HouseName string
+	Place     string `gorm:"not null"`
+	Landmark  string
+	City      string `gorm:"not null"`
+	District  string `gorm:"not null"`
+	Country   string `gorm:"not null"`
+	Pincode   string `gorm:"not null"`
+	Mobile    string `gorm:"not null"`
+}
+
+type OrdersListing struct {
+	ID              uint    `copier:"must"`
+	UserID          uint    `json:"userId"`
+	BookID          uint    `json:"bookId"`
+	Quantity        int     `json:"quantity"`
+	PaymentMethodID uint    `json:"paymentMethodId"`
+	PaymentStatus   string  `json:"paymentStatus"`
+	PaymentID       string  `json:"paymentId"`
+	AddressID       uint    `json:"addressId"`
+	DeliveryStatus  bool    `json:"deliveryStatus"`
+	TotalPrice      float64 `json:"totalPrice"`
+}

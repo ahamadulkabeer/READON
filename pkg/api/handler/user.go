@@ -53,7 +53,7 @@ func (cr UserHandler) GetLogin(c *gin.Context) {
 // @Produce json
 // @Param usersdata body models.SignupData true "User object to be saved"
 // @Router /signup [post]
-// @Success 200 {object} domain.User "OK"
+// @Success 200 string "OK"
 // @Failure 400 {object} models.ErrorResponse "Bad Request"
 // @Failure 500 {object} models.ErrorResponse "InternalServerError"
 func (cr *UserHandler) SaveUser(c *gin.Context) {
@@ -83,7 +83,7 @@ func (cr *UserHandler) SaveUser(c *gin.Context) {
 		response := models.User{}
 		copier.Copy(&response, &User)
 
-		c.JSON(http.StatusOK, response)
+		c.JSON(http.StatusOK, "user signed up successfully")
 	}
 }
 

@@ -1,11 +1,11 @@
 package domain
 
-type Adress struct {
+type Address struct {
 	AddressId uint `gorm:"primarykey"`
 	UserId    uint
 	Name      string `gorm:"not null"`
 	HouseNo   string
-	HouseName uint
+	HouseName string
 	Place     string `gorm:"not null"`
 	Landmark  string
 	City      string `gorm:"not null"`
