@@ -3,7 +3,6 @@ package handler
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/copier"
@@ -53,13 +52,13 @@ func (cr UserHandler) GetLogin(c *gin.Context) {
 // @Produce json
 // @Param usersdata body models.SignupData true "User object to be saved"
 // @Router /signup [post]
-// @Success 200 string "OK"
+// @Success 200 {string} string "ok"
 // @Failure 400 {object} models.ErrorResponse "Bad Request"
 // @Failure 500 {object} models.ErrorResponse "InternalServerError"
 func (cr *UserHandler) SaveUser(c *gin.Context) {
 	var user models.SignupData
 
-	if err := c.BindJSON(&user); err != nil {
+	if err := c.Bind(&user); err != nil {
 		errResponse := models.ErrorResponse{
 			Err:    err.Error(),
 			Status: "error while bindin json save user",
@@ -68,7 +67,8 @@ func (cr *UserHandler) SaveUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, errResponse)
 		return
 	}
-
+	fmt.Println("user in put :", user)
+	// before saving should check authorisation of the email
 	User, err := cr.userUseCase.Save(user)
 
 	if err != nil {
@@ -99,8 +99,9 @@ func (cr *UserHandler) SaveUser(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /user/update [put]
 func (cr UserHandler) UpdateUser(c *gin.Context) {
-	var user models.UpdateData
-	err := c.BindJSON(&user)
+	userId := c.GetInt("userId")
+	var user models.UserUpdateData
+	err := c.Bind(&user)
 	if err != nil {
 		errResponse := models.ErrorResponse{
 			Err:    err.Error(),
@@ -110,8 +111,7 @@ func (cr UserHandler) UpdateUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, errResponse)
 		return
 	}
-	//user.Id = c.MustGet("id").(int)
-	// should get id from context but it wont be available now because no authentication is doing
+	user.Id = userId
 	User, err := cr.userUseCase.UpdateUser(user)
 
 	if err != nil {
@@ -123,7 +123,7 @@ func (cr UserHandler) UpdateUser(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, errResponse)
 		return
 	}
-	response := models.UpdateData{}
+	response := models.UserUpdateData{}
 	copier.Copy(&response, &User)
 
 	c.JSON(http.StatusOK, response)
@@ -137,8 +137,7 @@ func (cr UserHandler) UpdateUser(c *gin.Context) {
 // @Success 200 {string} string "Successfully got the HTML page"
 // @Router /signup [get]
 func (cr *UserHandler) GetSignup(c *gin.Context) {
-	Response := "succesfully got the html page"
-	c.JSON(http.StatusOK, Response)
+	c.JSON(http.StatusOK, "a signup page here :)")
 }
 
 // UserLogin godoc
@@ -154,7 +153,7 @@ func (cr *UserHandler) GetSignup(c *gin.Context) {
 // @Router /login [post]
 func (cr UserHandler) UserLogin(c *gin.Context) {
 
-	var userinput models.Userlogindata
+	var userinput models.LoginData
 	err := c.Bind(&userinput)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
@@ -166,7 +165,7 @@ func (cr UserHandler) UserLogin(c *gin.Context) {
 	}
 	// ckecking the db to match given data and gets the the user id from db in return
 	userid, is_user, isPremium, err := cr.userUseCase.UserLogin(userinput)
-	fmt.Println("eroor :", err)
+	fmt.Println("error :", err)
 	if !is_user {
 		errresponse := models.ErrorResponse{
 			Err:    err.Error(),
@@ -196,19 +195,8 @@ func (cr UserHandler) UserLogin(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse "Couldn't get user profile"
 // @Router /user/profile/{id} [get]
 func (cr UserHandler) GetUserProfile(c *gin.Context) {
-	paramsId := c.Param("id")
-	id, err := strconv.Atoi(paramsId)
-
-	if err != nil {
-		errResponse := models.ErrorResponse{
-			Err:    err.Error(),
-			Status: "BadRequest , couldn't parse id ",
-			Hint:   "please try again !",
-		}
-		c.JSON(http.StatusBadRequest, errResponse)
-		return
-	}
-	user, err := cr.userUseCase.GetUserProfile(id)
+	userId := c.GetInt("userId")
+	user, err := cr.userUseCase.GetUserProfile(userId)
 	if err != nil {
 		errResponse := models.ErrorResponse{
 			Err:    err.Error(),
@@ -234,20 +222,8 @@ func (cr UserHandler) GetUserProfile(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse "Couldn't delete user"
 // @Router /user/account/{id} [delete]
 func (cr UserHandler) DeleteUserAccount(c *gin.Context) {
-	paramsId := c.Param("id")
-	id, err := strconv.Atoi(paramsId)
-	id = c.GetInt("id")
-	id = c.MustGet("id").(int)
-	if err != nil {
-		errResponse := models.ErrorResponse{
-			Err:    err.Error(),
-			Status: "BadRequest , couldn't parse id ",
-			Hint:   "please try again !",
-		}
-		c.JSON(http.StatusBadRequest, errResponse)
-		return
-	}
-	err = cr.userUseCase.DeleteUserAccount(id)
+	userId := c.GetInt("userId")
+	err := cr.userUseCase.DeleteUserAccount(userId)
 	if err != nil {
 		errResponse := models.ErrorResponse{
 			Err:    err.Error(),
@@ -300,9 +276,9 @@ func (cr *UserHandler) GetOtpLogin(c *gin.Context) {
 // @Failure 401 {object} models.ErrorResponse "Unauthorized"
 // @Router /otplogin [post]
 func (cr *UserHandler) VerifyAndSendOtp(c *gin.Context) {
-	var email string
 
-	if err := c.BindJSON(&email); err != nil {
+	email := c.PostForm("email")
+	if email == "" {
 		fmt.Println("email :", email)
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
 			Err:    "Bad Request",

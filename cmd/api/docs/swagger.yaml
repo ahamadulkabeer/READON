@@ -176,6 +176,8 @@ definitions:
         type: boolean
       id:
         type: integer
+      paymentId:
+        type: string
       paymentMethodId:
         type: integer
       paymentStatus:
@@ -710,7 +712,7 @@ paths:
       tags:
       - Admin
   /admin/users:
-    get:
+    post:
       description: |-
         Lists all users from the database.
         jwt temp:  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIn0.bw-k7fjfW6nY9DIBZ46ZcJG0IdaYclwHW7P7IPwuNoQ
@@ -899,9 +901,9 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: ok
           schema:
-            $ref: '#/definitions/domain.User'
+            type: string
         "400":
           description: Bad Request
           schema:
@@ -1372,23 +1374,6 @@ paths:
       summary: list a users orders
       tags:
       - order
-  /user/paymentlink:
-    get:
-      description: Delete a product from the cart for a specific user.
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-        "400":
-          description: Bad Request
-          schema:
-            type: string
-      summary: check out
-      tags:
-      - payment
   /user/profile/{id}:
     get:
       consumes:

@@ -1,7 +1,9 @@
 package domain
 
+import "gorm.io/gorm"
+
 type Book struct {
-	ID         uint   `gorm:"primaryKey;column:id"`
+	gorm.Model
 	Title      string `gorm:"not null;default:'Untitled'"`
 	Author     string `gorm:"not null"`
 	About      string `gorm:"type:text"`

@@ -5,9 +5,9 @@ import (
 )
 
 type AddressUsecase interface {
-	AddAddress(address domain.Address, userId int) error
-	EditAddress(adress domain.Address, userId int) error
-	ListAddress(userId int) ([]domain.Address, error)
-	GetAddress(addressId int) (domain.Address, error)
-	DeleteAddress(addressId int) error
+	AddAddress(address domain.Address) error
+	EditAddress(address domain.Address) error
+	ListAddress(userID uint) ([]domain.Address, error)
+	GetAddress(addressID, userID uint) (domain.Address, error)
+	DeleteAddress(addressID, userID uint) error
 }

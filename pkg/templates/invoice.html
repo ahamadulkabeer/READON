@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        .invoice {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin: 50px auto;
+            max-width: 800px;
+        }
+
+        .invoice h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .company-info {
+            margin-bottom: 20px;
+        }
+
+        .company-info p {
+            margin: 5px 0;
+        }
+
+        .product-list {
+            margin-bottom: 20px;
+        }
+
+        .product-list table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .product-list th, .product-list td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        .product-list th {
+            background-color: #f2f2f2;
+        }
+
+        .product-list tfoot th {
+            text-align: right;
+        }
+
+        .product-list tfoot td {
+            font-weight: bold;
+        }
+
+        .totals {
+            margin-top: 20px;
+        }
+
+        .totals table {
+            width: 50%;
+            margin-left: auto;
+            margin-right: 0;
+        }
+
+        .totals th, .totals td {
+            padding: 5px;
+            text-align: left;
+        }
+
+        .totals td.total {
+            font-weight: bold;
+        }
+        .address-container {
+            margin: 0;
+            padding: 0;
+        }
+
+        .address-container p {
+            margin: 0;
+            padding: 0;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="invoice">
+            <p>{{.Date}}</p>
+            <h1>Invoice</h1>
+            <div class="company-info">
+                <p><strong>Company Name:</strong>{{.CompanyName}}</p>
+                <p><strong>Address:</strong>{{.CompanyAddress}}</p>
+                <p><strong>Contact:</strong>{{.CompanyContact}}</p>
+            </div>
+            <div class="address-container">
+                <p><strong>Customer :</strong></p>
+                <div >
+                    {{with .Address}}
+                    <p>{{.Name}}</p>
+                    <p>{{.HouseNo}}, {{.HouseName}},</p>
+                    <p>{{.Place}}, {{.Landmark}},</p>
+                    <p>{{.City}}, {{.District}}, {{.Country}},</p>
+                    <p>Pincode : {{.Pincode}}</p>
+                    <p>Contact : {{.Mobile}}</p>
+                    {{end}}
+                </div>
+            </div>
+
+            <div class="product-list">
+                <h2>Products</h2>
+                <p>Order ID : {{.Order.ID}}</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Sl.no</th>
+                            <th>Product</th>
+                            <th>Quantity</th>
+                            <th>Price</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    
+                    <tbody>
+                        {{ range $index , $_ := .OrderItems}}
+                        <tr>
+                            <td>{{$index}}</td>
+                            <td>{{.Title}}</td>
+                            <td>{{.Quantity}}</td>
+                            <td>{{.Price}}</td>
+                            <td>{{.Total}}</td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                    
+                    <tfoot>
+                        <tr>
+                            <th colspan="4">Subtotal:</th>
+                            <td>{{.Order.TotalPrice}}</td>
+                        </tr>
+                        <tr>
+                            <th colspan="4">Delivery Charge:</th>
+                            <td>{{.Order.DeleveryCharge}}</td>
+                        </tr>
+                        <tr>
+                            <th colspan="4">GST:</th>
+                            <td>{{.GST}}</td>
+                        </tr>
+                        <tr>
+                            <th colspan="4">Total:</th>
+                            <td>{{.Total}}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+        <button class="btn btn-primary" id="downloadBtn">Download Invoice</button>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
+
+    <script>
+        // Function to download the invoice as a PDF
+        function downloadInvoice() {
+            const invoice = document.querySelector('.invoice');
+    
+            // Configuration for html2pdf
+            const options = {
+                filename: 'invoice.pdf',
+                margin: 10,
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+    
+            // Generate PDF
+            html2pdf().set(options).from(invoice).save();
+        }
+    
+        // Attach click event listener to the download button
+        document.getElementById('downloadBtn').addEventListener('click', downloadInvoice);
+    </script>
+    
+</body>
+</html>  

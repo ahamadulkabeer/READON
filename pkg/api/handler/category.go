@@ -77,7 +77,7 @@ func (cr CategoryHandler) AddCategory(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, errResponse)
 		return
 	}
-	response := "successfully added new category" + addedCategory.Name
+	response := "successfully added new category : " + addedCategory
 	c.JSON(http.StatusOK, response)
 }
 
@@ -94,7 +94,7 @@ func (cr CategoryHandler) AddCategory(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /admin/updatecategory/{id} [put]
 func (cr CategoryHandler) UpdateCategory(c *gin.Context) {
-	paramsId := c.Param("id")
+	paramsId := c.Param("categoryId")
 	id, err := strconv.Atoi(paramsId)
 	fmt.Println("idd:", id)
 	if err != nil {
@@ -135,7 +135,7 @@ func (cr CategoryHandler) UpdateCategory(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse "Delete failed" or "Please try again"
 // @Router /admin/deletecategory/{id} [delete]
 func (cr CategoryHandler) DeleteCategory(c *gin.Context) {
-	paramsId := c.Param("id")
+	paramsId := c.Param("categoryId")
 	id, err := strconv.Atoi(paramsId)
 	if err != nil {
 		errResponse := models.ErrorResponse{

@@ -69,7 +69,7 @@ func (cr ProductHandler) ListProductsForUSer(c *gin.Context) { // listing , sear
 	if err != nil {
 		errResponse := models.ErrorResponse{
 			Err:    err.Error(),
-			Status: "Error while converting category id",
+			Status: "Error while parsing data",
 			Hint:   "please try again",
 		}
 		c.JSON(http.StatusBadRequest, errResponse)
@@ -172,7 +172,7 @@ func (cr *ProductHandler) Addproduct(c *gin.Context) {
 	}
 
 	product.Image = imagefile
-	product.Name = c.PostForm("name")
+	product.Title = c.PostForm("title")
 	product.Author = c.PostForm("author")
 	product.About = c.PostForm("about")
 	product.Price, err = strconv.ParseFloat(c.PostForm("price"), 64)
@@ -231,10 +231,20 @@ func (cr *ProductHandler) Addproduct(c *gin.Context) {
 // @Router /admin/editproduct [put]
 func (cr ProductHandler) EditProductDet(c *gin.Context) {
 	var product models.ProductUpdate
-
+	var err error
+	product.ID, err = strconv.Atoi(c.Param("bookId"))
+	if err != nil {
+		errResponse := models.ErrorResponse{
+			Err:    err.Error(),
+			Status: "couldn't parse bookId",
+			Hint:   "please try again",
+		}
+		c.JSON(http.StatusInternalServerError, errResponse)
+		return
+	}
 	c.Bind(&product)
 	fmt.Println("product :", product)
-	product, err := cr.productUseCase.EditProduct(product)
+	product, err = cr.productUseCase.EditProduct(product)
 	if err != nil {
 		errResponse := models.ErrorResponse{
 			Err:    err.Error(),
@@ -262,7 +272,7 @@ func (cr ProductHandler) EditProductDet(c *gin.Context) {
 // @Router /admin/addcover/{id} [post]
 func (cr ProductHandler) AddBookCover(c *gin.Context) {
 
-	bookId, err := strconv.Atoi(c.Param("id"))
+	bookId, err := strconv.Atoi(c.Param("bookId"))
 	if err != nil {
 		errResponse := models.ErrorResponse{
 			Err:    err.Error(),
@@ -334,7 +344,7 @@ func (cr ProductHandler) AddBookCover(c *gin.Context) {
 // @Failure 404 {object} models.ErrorResponse "Product not found"
 // @Router /user/book/{id} [get]
 func (cr ProductHandler) GetProduct(c *gin.Context) {
-	bookId := c.Param("id")
+	bookId := c.Param("bookId")
 
 	id, err := strconv.Atoi(bookId)
 	if err != nil {
@@ -376,13 +386,13 @@ func (cr ProductHandler) GetProduct(c *gin.Context) {
 // @Failure 404 {object} models.ErrorResponse "Product not found"
 // @Router /admin/deletebook/{id} [Delete]
 func (cr ProductHandler) DeleteProduct(c *gin.Context) {
-	bookId := c.Param("id")
+	bookId := c.Param("bookId")
 
 	id, err := strconv.Atoi(bookId)
 	if err != nil {
 		errResponse := models.ErrorResponse{
 			Err:    err.Error(),
-			Status: "Error while converting category id",
+			Status: "Error while converting  bookId ",
 			Hint:   "please try again",
 		}
 		c.JSON(http.StatusBadRequest, errResponse)
@@ -413,12 +423,12 @@ func (cr ProductHandler) DeleteProduct(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse "Error while getting cover images"
 // @Router /admin/listbookcovers/{id} [get]
 func (cr ProductHandler) ListBookCovers(c *gin.Context) {
-	paramId := c.Param("id")
+	paramId := c.Param("bookId")
 	bookId, err := strconv.Atoi(paramId)
 	if err != nil {
 		errResponse := models.ErrorResponse{
 			Err:    err.Error(),
-			Status: "Error while converting category id",
+			Status: "Error while converting bookId",
 			Hint:   "please try again",
 		}
 		c.JSON(http.StatusBadRequest, errResponse)

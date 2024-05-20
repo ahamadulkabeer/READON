@@ -6,6 +6,7 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
+// creating token string from data
 func GetTokenString(id int, role string, premium bool) string {
 
 	claims := jwt.MapClaims{
@@ -34,14 +35,17 @@ func validateToken(tokenstring string) (*jwt.Token, error) {
 	return token, err
 }
 
-func checkRole(token *jwt.Token) (string, bool) {
-	claims, ok := token.Claims.(jwt.MapClaims)
-	role := claims["role"].(string)
+func GetClaims(token jwt.Token) jwt.MapClaims {
+	claims, _ := token.Claims.(jwt.MapClaims)
+	return claims
+}
+
+func checkRole(claims jwt.MapClaims) (interface{}, bool) {
+	role, ok := claims["role"]
 	return role, ok
 }
 
-func getID(token *jwt.Token) (int, bool) {
-	claims, ok := token.Claims.(jwt.MapClaims)
-	id := int(claims["id"].(float64))
+func getID(claims jwt.MapClaims) (interface{}, bool) {
+	id, ok := claims["id"]
 	return id, ok
 }

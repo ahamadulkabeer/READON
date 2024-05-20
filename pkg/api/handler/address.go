@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
+	"readon/pkg/api/responses"
 	"readon/pkg/domain"
 	"readon/pkg/models"
 	services "readon/pkg/usecase/interface"
@@ -36,28 +36,22 @@ func (cr AddressHandler) AddAddress(c *gin.Context) {
 	var address domain.Address
 	err := c.Bind(&address)
 	if err != nil {
-		errResponse := models.ErrorResponse{
-			Err:    err.Error(),
-			Status: "Error while binding data",
-			Hint:   "please try again",
-		}
-		c.JSON(http.StatusBadRequest, errResponse)
+		c.JSON(http.StatusBadRequest, responses.RespondWithError(http.StatusBadRequest,
+			"Error while binding parameters , pls check the input ", err.Error()))
 		return
 	}
-	fmt.Println("adress in hdler :", address)
 
-	err = cr.AddressUseCase.AddAddress(address, int(address.UserId))
+	userID := c.GetInt("userId")
+
+	address.UserID = uint(userID)
+	err = cr.AddressUseCase.AddAddress(address)
 	if err != nil {
-		errResponse := models.ErrorResponse{
-			Err:    err.Error(),
-			Status: "Error while adding Adreess ",
-			Hint:   "please try again",
-		}
-		c.JSON(http.StatusInternalServerError, errResponse)
+		c.JSON(http.StatusInternalServerError, responses.RespondWithError(500,
+			"Error while creating resource : couldn't add address", err))
 		return
 	}
 
-	c.JSON(http.StatusOK, "Adress Added")
+	c.JSON(http.StatusCreated, responses.RespondWithSuccess(http.StatusCreated, "address added successfully", nil))
 
 }
 
@@ -75,26 +69,30 @@ func (cr AddressHandler) UpdateAddress(c *gin.Context) {
 	var address domain.Address
 	err := c.Bind(&address)
 	if err != nil {
-		errResponse := models.ErrorResponse{
-			Err:    err.Error(),
-			Status: "Error while binding data",
-			Hint:   "please try again",
-		}
-		c.JSON(http.StatusBadRequest, errResponse)
+		c.JSON(http.StatusBadRequest, responses.RespondWithError(http.StatusBadRequest,
+			"Error while binding parameters , pls check the input ", err.Error()))
 		return
 	}
-	err = cr.AddressUseCase.EditAddress(address, int(address.UserId))
+	addressIdStr := c.Param("addressId")
+	addressID, err := strconv.Atoi(addressIdStr)
 	if err != nil {
-		errResponse := models.ErrorResponse{
-			Err:    err.Error(),
-			Status: "Error while updating Adreess ",
-			Hint:   "please try again",
-		}
-		c.JSON(http.StatusInternalServerError, errResponse)
+		c.JSON(http.StatusBadRequest, responses.RespondWithError(http.StatusBadRequest,
+			"param : addressId not found", err.Error()))
 		return
 	}
 
-	c.JSON(http.StatusOK, "Adress Updated")
+	userID := c.GetInt("userId")
+
+	address.UserID = uint(userID)
+	address.ID = uint(addressID)
+	err = cr.AddressUseCase.EditAddress(address)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, responses.RespondWithError(http.StatusInternalServerError,
+			"Error while updating  address : couldn't update address", err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, responses.RespondWithSuccess(http.StatusOK, "address updated successfully", nil))
 
 }
 
@@ -108,28 +106,22 @@ func (cr AddressHandler) UpdateAddress(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /user/deleteaddress [delete]
 func (cr AddressHandler) DeleteAddress(c *gin.Context) {
-	addressIdStr := c.Query("addressid")
-	addressId, err := strconv.Atoi(addressIdStr)
+	addressIdStr := c.Param("addressId")
+	addressID, err := strconv.Atoi(addressIdStr)
 	if err != nil {
-		errResponse := models.ErrorResponse{
-			Err:    err.Error(),
-			Status: "Error while converting data",
-			Hint:   "please try again",
-		}
-		c.JSON(http.StatusBadRequest, errResponse)
+		c.JSON(http.StatusBadRequest, responses.RespondWithError(http.StatusBadRequest,
+			"param : addressId not found", err.Error()))
 		return
 	}
-	err = cr.AddressUseCase.DeleteAddress(addressId)
+	userID := c.GetInt("userId")
+
+	err = cr.AddressUseCase.DeleteAddress(uint(addressID), uint(userID))
 	if err != nil {
-		errResponse := models.ErrorResponse{
-			Err:    err.Error(),
-			Status: "Error while deleting Adreess ",
-			Hint:   "please try again",
-		}
-		c.JSON(http.StatusInternalServerError, errResponse)
+		c.JSON(http.StatusInternalServerError, responses.RespondWithError(http.StatusInternalServerError,
+			"Error while deleting  address : couldn't delete address", err.Error()))
 		return
 	}
-	c.JSON(http.StatusOK, "Adress Deleted")
+	c.JSON(http.StatusOK, responses.RespondWithSuccess(http.StatusNoContent, "address Deleted successfully", nil))
 }
 
 // @Summary Get address
@@ -142,30 +134,23 @@ func (cr AddressHandler) DeleteAddress(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /user/getaddress [get]
 func (cr AddressHandler) GetAddress(c *gin.Context) {
-	addressIdStr := c.Query("addressid")
-	addressId, err := strconv.Atoi(addressIdStr)
+	addressIdStr := c.Param("addressId")
+	addressID, err := strconv.Atoi(addressIdStr)
 	if err != nil {
-		errResponse := models.ErrorResponse{
-			Err:    err.Error(),
-			Status: "Error while converting data",
-			Hint:   "please try again",
-		}
-		c.JSON(http.StatusBadRequest, errResponse)
+		c.JSON(http.StatusBadRequest, responses.RespondWithError(http.StatusBadRequest,
+			"param : addressId not found", err.Error()))
 		return
 	}
-	address, err := cr.AddressUseCase.GetAddress(addressId)
+	userID := c.GetInt("userId")
+	address, err := cr.AddressUseCase.GetAddress(uint(addressID), uint(userID))
 	if err != nil {
-		errResponse := models.ErrorResponse{
-			Err:    err.Error(),
-			Status: "Error while getting Adreess ",
-			Hint:   "please try again",
-		}
-		c.JSON(http.StatusInternalServerError, errResponse)
+		c.JSON(http.StatusInternalServerError, responses.RespondWithError(http.StatusInternalServerError,
+			"Error while retriving  address ", err.Error()))
 		return
 	}
 	var addressl models.ListAddress
 	copier.Copy(&addressl, &address)
-	c.JSON(http.StatusOK, addressl)
+	c.JSON(http.StatusOK, responses.RespondWithSuccess(http.StatusOK, "address retrived successfully", addressl))
 }
 
 // @Summary List addresses
@@ -178,28 +163,16 @@ func (cr AddressHandler) GetAddress(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /user/listaddresses [get]
 func (cr AddressHandler) ListAddress(c *gin.Context) {
-	userIdStr := c.Query("userid")
-	userId, err := strconv.Atoi(userIdStr)
+
+	userID := c.GetInt("userId")
+
+	addressess, err := cr.AddressUseCase.ListAddress(uint(userID))
 	if err != nil {
-		errResponse := models.ErrorResponse{
-			Err:    err.Error(),
-			Status: "Error while converting data",
-			Hint:   "please try again",
-		}
-		c.JSON(http.StatusBadRequest, errResponse)
-		return
-	}
-	addressess, err := cr.AddressUseCase.ListAddress(userId)
-	if err != nil {
-		errResponse := models.ErrorResponse{
-			Err:    err.Error(),
-			Status: "Error while getting Adreessess ",
-			Hint:   "please try again",
-		}
-		c.JSON(http.StatusInternalServerError, errResponse)
+		c.JSON(http.StatusInternalServerError, responses.RespondWithError(http.StatusInternalServerError,
+			"Error while retriving  addressess ", err.Error()))
 		return
 	}
 	var addressl []models.ListAddress
 	copier.Copy(&addressl, &addressess)
-	c.JSON(http.StatusOK, addressl)
+	c.JSON(http.StatusOK, responses.RespondWithSuccess(http.StatusOK, "address retrived successfully", addressl))
 }

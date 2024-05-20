@@ -19,24 +19,30 @@ func NewCartUseCase(crepo interfaces.CartRepository, prepo interfaces.ProductRep
 	}
 }
 
-func (c CartUseCase) AddItem(item domain.Cart, userId int) error {
-	count, err := c.CartRepo.CheckForItem(userId, int(item.BookId))
+func (c CartUseCase) AddItem(userId, bookId int) error {
+	count, err := c.CartRepo.CheckForItem(userId, bookId)
 	if err != nil {
 		return err
 	}
 	if count != 0 {
 		count++
-		err = c.CartRepo.UpdateQty(userId, int(item.BookId), count)
+		err = c.CartRepo.UpdateQty(userId, int(bookId), count)
 		if err != nil {
 			return err
 		}
 		return nil
 	}
-	item.Price, err = c.ProductRepo.GetPrice(int(item.BookId))
+	price, err := c.ProductRepo.GetPrice(int(bookId))
 	if err != nil {
 		return err
 	}
-	err = c.CartRepo.AddItem(item, userId)
+	newCartItem := domain.Cart{
+		UserID:   uint(userId),
+		BookID:   uint(bookId),
+		Price:    price,
+		Quantity: 1,
+	}
+	err = c.CartRepo.AddItem(newCartItem)
 	if err != nil {
 		return err
 	}
@@ -44,13 +50,18 @@ func (c CartUseCase) AddItem(item domain.Cart, userId int) error {
 }
 
 func (c CartUseCase) UpdateQty(userId, bookId, qty int) error {
-	// i dont know if the count == 0 thruws an error
+	if qty <= 0 {
+		err := c.CartRepo.DeleteItem(userId, bookId)
+		if err != nil {
+			return err
+		}
+	}
 	count, err := c.CartRepo.CheckForItem(userId, bookId)
 	if err != nil {
 		return err
 	}
 	if count == 0 {
-		return errors.New("item not found on cart !")
+		return errors.New("item not found in cart")
 	}
 	err = c.CartRepo.UpdateQty(userId, bookId, qty)
 	if err != nil {
@@ -79,6 +90,9 @@ func (c CartUseCase) GetCart(userId int) ([]domain.Cart, error) {
 	list, err := c.CartRepo.GetItems(userId)
 	if err != nil {
 		return nil, err
+	}
+	if len(list) == 0 {
+		return []domain.Cart{}, errors.New("cart is empty")
 	}
 	return list, nil
 }

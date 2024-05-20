@@ -35,13 +35,18 @@ func (c *userUseCase) Save(user models.SignupData) (domain.User, error) {
 	}
 	err = c.userRepo.CheckForEmail(user.Email)
 	if err == nil {
-		return User, errors.New("Email already has an account ")
+		return User, errors.New("email already has an account ")
+	}
+
+	User.Password, err = helpers.HashPassword(user.Password)
+	if err != nil {
+		return User, errors.New("password hashing error ")
 	}
 	User, err = c.userRepo.Save(User)
 	return User, err
 }
 
-func (c *userUseCase) UpdateUser(user models.UpdateData) (domain.User, error) {
+func (c *userUseCase) UpdateUser(user models.UserUpdateData) (domain.User, error) {
 
 	fmt.Println("user:", user)
 	var User domain.User
@@ -55,21 +60,24 @@ func (c *userUseCase) UpdateUser(user models.UpdateData) (domain.User, error) {
 	return User, err
 }
 
-func (c *userUseCase) UserLogin(userinput models.Userlogindata) (int, bool, bool, error) {
+func (c *userUseCase) UserLogin(userinput models.LoginData) (int, bool, bool, error) {
 
 	user, err := c.userRepo.FindByEmail(userinput.Email)
 	if err != nil {
-		return 0, false, false, errors.New("invalid username or password")
+		fmt.Println(" Email not found in db")
+		return 0, false, false, errors.New("invalid email or password")
+
 	}
-	if user.Password != userinput.Password {
-		//return 0, false, errors.New("password does not match")
-		return 0, false, false, errors.New("invalid username or password")
+	isValid, err := helpers.ValidatePassword(user.Password, userinput.Password)
+	if err != nil {
+		return 0, false, false, errors.New("invalid email or password")
 	}
-	if user.Permission == false {
+	if !user.Permission {
+		fmt.Println("use have bee blocked !")
 		return 0, false, false, errors.New("user have benn blocked by the admin")
 	}
 
-	return int(user.ID), true, user.Premium, err
+	return int(user.ID), isValid, user.Premium, err
 }
 
 func (c userUseCase) GetUserProfile(id int) (domain.User, error) {

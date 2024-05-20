@@ -20,7 +20,8 @@ func NewAdminRepository(DB *gorm.DB) interfaces.AdminRepository {
 	}
 }
 
-func (c adminDatabase) Login(admin models.Userlogindata) (int, bool) {
+// to do : clear this //
+func (c adminDatabase) Login(admin models.LoginData) (int, bool) {
 	var admins domain.Admin
 	result := c.DB.Where("email = ? AND password = ?", admin.Email, admin.Password).Limit(1).Find(&admins)
 	if result.Error != nil {
@@ -36,7 +37,7 @@ func (c adminDatabase) Login(admin models.Userlogindata) (int, bool) {
 func (c *adminDatabase) ListAdmins() ([]models.Admin, error) {
 	var list []models.Admin
 
-	err := c.DB.Table("admins").Select("id,name,email").Limit(8).Scan(&list).Error
+	err := c.DB.Limit(8).Find(&list).Error
 
 	return list, err
 }

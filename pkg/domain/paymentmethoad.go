@@ -1,6 +1,6 @@
 package domain
 
-type PaymentMethoad struct {
-	MethodId uint   `gorm:"primarykey"`
-	Name     string `gorm:"not null;unique"`
+type PaymentMethod struct {
+	ID   uint   `gorm:"primarykey"`
+	Name string `gorm:"not null;unique"`
 }

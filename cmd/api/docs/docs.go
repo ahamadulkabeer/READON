@@ -670,7 +670,7 @@ const docTemplate = `{
             }
         },
         "/admin/users": {
-            "get": {
+            "post": {
                 "security": [
                     {
                         "Bearer": []
@@ -965,9 +965,9 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "ok",
                         "schema": {
-                            "$ref": "#/definitions/domain.User"
+                            "type": "string"
                         }
                     },
                     "400": {
@@ -1676,32 +1676,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/user/paymentlink": {
-            "get": {
-                "description": "Delete a product from the cart for a specific user.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "payment"
-                ],
-                "summary": "check out",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
         "/user/profile/{id}": {
             "get": {
                 "description": "Get user profile information by providing the user ID",
@@ -2211,6 +2185,9 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "integer"
+                },
+                "paymentId": {
+                    "type": "string"
                 },
                 "paymentMethodId": {
                     "type": "integer"

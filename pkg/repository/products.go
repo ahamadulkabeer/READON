@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"readon/pkg/domain"
@@ -48,6 +47,7 @@ func (c *productDatabase) ListProductsForUser(pageDet models.Pagination, offset 
 	if pageDet.Search != "" {
 		query = query.Where(" books.title ILIKE  ? ", fmt.Sprintf("%%%s%%", pageDet.Search))
 	}
+	// filter by category
 	if pageDet.Filter != 0 {
 		query = query.Where("books.category_id = ?", pageDet.Filter)
 	}
@@ -81,7 +81,7 @@ func (c productDatabase) GetTotalNoOfproducts(pageDet models.Pagination) (int, e
 
 func (c *productDatabase) AddProduct(product domain.Book) (int, error) {
 
-	err := c.DB.Save(&product).Error
+	err := c.DB.Create(&product).Error
 	fmt.Println("product id :", product.ID)
 	return int(product.ID), err
 }
@@ -98,20 +98,30 @@ func (c productDatabase) AddImage(image []byte, book_Id int) error {
 	return err
 }
 
-func (c productDatabase) GetProduct(bookId int) (models.ListingBook, error) {
-	var book models.ListingBook
-	var err error
-	db := c.DB.Table("books").Select("books.id AS book_Id, books.title, books.author, books.about, books.rating, books.premium, books.price, categories, bookcovers.image").
-		Joins("JOIN categories ON books.category_id = categories.id").
-		Joins("JOIN bookcovers ON books.id = bookcovers.book_id").
-		Where("books.id = ?", bookId).Find(&book)
-	//log.Println("img : ", book.Image)
-	if db.RowsAffected == 0 {
-		err = errors.New("No record found")
-	}
-	return book, err
-}
+// func (c productDatabase) GetProduct(bookId int) (models.ListingBook, error) {
+// 	var book models.ListingBook
+// 	var err error
+// 	db := c.DB.Table("books").Select("books.id AS book_Id, books.title, books.author, books.about, books.rating, books.premium, books.price, categories").
+// 		Joins("JOIN categories ON books.category_id = categories.id").
+// 		Preload("BookCovers", "book_id = ?", bookId).
+// 		Where("books.id = ?", bookId).Find(&book)
 
+//		fmt.Println("rows affected ", db.RowsAffected, " bookid ", bookId)
+//		fmt.Println("error :", db.Error)
+//		if db.RowsAffected == 0 {
+//			err = errors.New("no record found")
+//		}
+//		return book, err
+//	}
+func (c productDatabase) GetProduct(BookID int) (domain.Book, error) {
+	var book domain.Book
+
+	err := c.DB.Model(&domain.Book{}).Where("id = ?", BookID).First(&book).Error
+	if err != nil {
+		return domain.Book{}, err
+	}
+	return book, nil
+}
 func (c productDatabase) DeleteProduct(book domain.Book) error {
 	err := c.DB.Where("id = ?", book.ID).Delete(&book).Error
 

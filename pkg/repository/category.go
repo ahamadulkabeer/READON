@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	domain "readon/pkg/domain"
 	interfaces "readon/pkg/repository/interface"
 
@@ -67,5 +68,6 @@ func (c categoryDatabase) DeleteCategory(categoryID int) error {
 func (c categoryDatabase) ListCategories(limit int) ([]domain.Category, error) {
 	var categories []domain.Category
 	err := c.DB.Limit(limit).Find(&categories).Error
+	fmt.Println("cat :", categories)
 	return categories, err
 }

@@ -5,6 +5,6 @@ import (
 )
 
 type AdminRepository interface {
-	Login(models.Userlogindata) (int, bool)
+	Login(models.LoginData) (int, bool)
 	ListAdmins() ([]models.Admin, error)
 }

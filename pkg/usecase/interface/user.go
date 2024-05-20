@@ -8,9 +8,9 @@ import (
 type UserUseCase interface {
 	Save(models.SignupData) (domain.User, error)
 
-	UpdateUser(user models.UpdateData) (domain.User, error)
+	UpdateUser(user models.UserUpdateData) (domain.User, error)
 
-	UserLogin(userinput models.Userlogindata) (int, bool, bool, error)
+	UserLogin(userinput models.LoginData) (int, bool, bool, error)
 
 	GetUserProfile(int) (domain.User, error)
 

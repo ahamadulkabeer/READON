@@ -19,20 +19,24 @@ func NewCategoryUseCase(repo interfaces.CategoryRepository) services.CategoryUse
 	}
 }
 
-func (c CategoryUseCase) AddCategory(newcategory string) (domain.Category, error) {
+func (c CategoryUseCase) AddCategory(newcategory string) (string, error) {
 	var newCategory domain.Category
-	err := c.CategoryRepo.CheckCategory(newcategory)
+	err := helpers.ValidateCategory(newcategory)
+	if err != nil {
+		return "", err
+	}
+	err = c.CategoryRepo.CheckCategory(newcategory)
 	if err == nil {
 		fmt.Println("error == nil catogory already exist getcategory by id")
-		err := errors.New("category already exist!")
+		err := errors.New("category already exist")
 		fmt.Println(err)
-		return newCategory, err
+		return "", err
 	}
 	newCategory, err = c.CategoryRepo.AddCategory(newcategory)
 	if err != nil {
-		return newCategory, err
+		return "", err
 	}
-	return newCategory, nil
+	return newCategory.Name, nil
 }
 
 func (c CategoryUseCase) UpdateCategory(idtoch int, newcategory string) (domain.Category, error) {

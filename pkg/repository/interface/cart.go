@@ -3,11 +3,11 @@ package interfaces
 import "readon/pkg/domain"
 
 type CartRepository interface {
-	AddItem(item domain.Cart, userId int) error
+	AddItem(newCartItem domain.Cart) error
 	UpdateQty(userId, bookId, NQty int) error
 	DeleteItem(userId, bookId int) error
 	GetItems(userId int) ([]domain.Cart, error)
-	// ClearCart
+	GetTotalCartPrice(userId int) (float64, error)
 	CheckForItem(userId, bookId int) (int, error)
 }
 

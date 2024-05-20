@@ -22,12 +22,12 @@ func NewUserRepository(DB *gorm.DB) interfaces.UserRepository {
 	return &userDatabase{DB}
 }
 
-func (c userDatabase) ListUsers(pageDet models.Pagination, offset int) ([]domain.User, int, error) {
+func (c userDatabase) ListUsers(pageDet models.Pagination) ([]domain.User, int, error) {
 	var users []domain.User
 	var numOfResult int64
 	log.Println("pagedat in repo", pageDet)
-	log.Println("offset :", offset)
-	err := c.DB.Table("users").Select("id,name,email,permission").Where(" name ILIKE  ?", fmt.Sprintf("%%%s%%", pageDet.Search)).Offset(offset).Limit(pageDet.Size).Find(&users).Error
+	log.Println("offset :", pageDet.Offset)
+	err := c.DB.Table("users").Select("id,name,email,permission").Where(" name ILIKE  ?", fmt.Sprintf("%%%s%%", pageDet.Search)).Offset(pageDet.Offset).Limit(pageDet.Size).Find(&users).Error
 	if err != nil {
 		return users, 0, err
 	}
@@ -46,19 +46,6 @@ func (c *userDatabase) UpdateUser(user domain.User) (domain.User, error) {
 	err := c.DB.Model(&domain.User{}).Where("id = ?", user.ID).Update("name", user.Name).Error
 
 	return user, err
-}
-
-func (c *userDatabase) Authorise(user models.Userlogindata) (int, bool, error) {
-	var users domain.User
-	result := c.DB.Where("email = ? AND password = ? AND permission = ?", user.Email, user.Password, true).Limit(1).Find(&users)
-	if result.Error != nil {
-		fmt.Println("error while ckecking for mathing data :", result.Error)
-	}
-
-	if result.RowsAffected == 0 {
-		return 0, false, nil
-	}
-	return int(users.ID), true, result.Error
 }
 
 func (c userDatabase) FindByID(id uint) (domain.User, error) {
@@ -95,7 +82,7 @@ func (c *userDatabase) FindByEmail(email string) (domain.User, error) {
 	var user domain.User
 	db := c.DB.Where("email = ?", email).Find(&user)
 	if db.RowsAffected <= 0 {
-		return user, errors.New("Email not found")
+		return user, errors.New("email not found")
 	}
 	log.Println("login user details : ", user)
 	return user, nil

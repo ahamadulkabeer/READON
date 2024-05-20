@@ -3,8 +3,8 @@ package interfaces
 import "readon/pkg/domain"
 
 type CartUseCase interface {
-	AddItem(item domain.Cart, userId int) error
-	UpdateQty(userId, bookId, qty int) error
-	DeleteItem(userId, bookId int) error
-	GetCart(userId int) ([]domain.Cart, error)
+	AddItem(userID, bookID int) error
+	UpdateQty(userID, bookID, qty int) error
+	DeleteItem(userID, bookID int) error
+	GetCart(userID int) ([]domain.Cart, error)
 }

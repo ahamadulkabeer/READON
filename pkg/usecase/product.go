@@ -45,7 +45,7 @@ func (c ProductUseCase) ListProductsForUser(pageDet *models.Pagination) ([]model
 
 func (c ProductUseCase) Addproduct(pdct models.Product) (addbookerr, addimgerr error) {
 	var product = domain.Book{
-		Title:      pdct.Name,
+		Title:      pdct.Title,
 		Author:     pdct.Author,
 		About:      pdct.About,
 		CategoryID: pdct.CategoryID,
@@ -69,13 +69,13 @@ func (c ProductUseCase) EditProduct(pdct models.ProductUpdate) (models.ProductUp
 	fmt.Println("oprodect :", oproduct)*/
 
 	var product = domain.Book{
-		ID:         uint(pdct.Id),
 		Title:      pdct.Name,
 		Author:     pdct.Author,
 		About:      pdct.About,
 		CategoryID: pdct.CategoryID,
 		Price:      pdct.Price,
 	}
+	product.ID = uint(pdct.ID)
 	fmt.Println("product category id :", product.CategoryID)
 	product, err := c.productRepo.EditProduct(product)
 	copier.Copy(&pdct, &product)
@@ -83,7 +83,7 @@ func (c ProductUseCase) EditProduct(pdct models.ProductUpdate) (models.ProductUp
 
 }
 
-func (c ProductUseCase) GetProduct(bookId int) (models.ListingBook, error) {
+func (c ProductUseCase) GetProduct(bookId int) (domain.Book, error) {
 	return c.productRepo.GetProduct(bookId)
 }
 

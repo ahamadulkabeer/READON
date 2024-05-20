@@ -12,7 +12,8 @@ type ProductRepository interface {
 	AddProduct(product domain.Book) (int, error)
 	EditProduct(product domain.Book) (domain.Book, error)
 	AddImage([]byte, int) error
-	GetProduct(int) (models.ListingBook, error)
+	//GetProduct(bookID int) (models.ListingBook, error)
+	GetProduct(BookID int) (domain.Book, error)
 	DeleteProduct(domain.Book) error
 
 	ListBookCovers(bookId int) ([][]byte, error)

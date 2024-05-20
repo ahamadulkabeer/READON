@@ -20,7 +20,7 @@ func NewAdminUsecase(adminrepo interfaces.AdminRepository, userrepo interfaces.U
 	}
 }
 
-func (c AdminUseCase) Login(admin models.Userlogindata) (int, bool) {
+func (c AdminUseCase) Login(admin models.LoginData) (int, bool) {
 	return c.adminRepo.Login(admin)
 }
 
@@ -28,13 +28,15 @@ func (cr *AdminUseCase) ListAdmins() ([]models.Admin, error) {
 	return cr.adminRepo.ListAdmins()
 }
 
-func (c AdminUseCase) ListUsers(pageDet *models.Pagination) ([]domain.User, int, error) {
+func (c AdminUseCase) ListUsers(pageDet models.Pagination) ([]domain.User, int, error) {
 	if pageDet.NewPage == 0 {
 		pageDet.NewPage = 1
 	}
-	pageDet.Size = 5
-	offset := pageDet.Size * (pageDet.NewPage - 1)
-	users, numofresults, err := c.userRepo.ListUsers(*pageDet, offset)
+	if pageDet.Size == 0 {
+		pageDet.Size = 5
+	}
+	pageDet.Offset = pageDet.Size * (pageDet.NewPage - 1)
+	users, numofresults, err := c.userRepo.ListUsers(pageDet)
 	pageDet.Lastpage = numofresults / pageDet.Size
 	if numofresults%pageDet.Size != 0 {
 		pageDet.Lastpage++

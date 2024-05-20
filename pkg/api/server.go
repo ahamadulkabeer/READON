@@ -1,36 +1,42 @@
 package http
 
 import (
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
 	_ "readon/cmd/api/docs"
 	handler "readon/pkg/api/handler"
+	"readon/pkg/api/middleware"
 )
 
 type ServerHTTP struct {
 	engine *gin.Engine
 }
 
-func NewServerHTTP(userHandler *handler.UserHandler, productHandler *handler.ProductHandler, adminHandler *handler.AdminHandler, categoryHandler *handler.CategoryHandler, cartHandler *handler.CartHandler, orderHandler *handler.OrderHAndler, addressHandler *handler.AddressHandler) *ServerHTTP {
+func NewServerHTTP(userHandler *handler.UserHandler,
+	productHandler *handler.ProductHandler,
+	adminHandler *handler.AdminHandler,
+	categoryHandler *handler.CategoryHandler,
+	cartHandler *handler.CartHandler,
+	orderHandler *handler.OrderHAndler,
+	addressHandler *handler.AddressHandler,
+	couponHandler *handler.CouponHandler) *ServerHTTP {
+
 	engine := gin.New()
+	engine.Use(cors.Default())
 
 	//engine.LoadHTMLGlob("../templates/*")
 
 	// Use logger from Gin
 	engine.Use(gin.Logger())
-
+	engine.GET("/invoice/:orderId", orderHandler.DownloadInvoice)
+	engine.POST("/coupon")
 	// Swagger docs
 	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	engine.LoadHTMLGlob("pkg/templates/*.html")
-
-	// Auth middleware
-	users := engine.Group("/user")
-	admin := engine.Group("/admin")
-	//category := admin.Group("/category")
-
-	//user handlers
+	//user login / sign up
 	engine.GET("/signup", userHandler.GetSignup)
 	engine.POST("/signup", userHandler.SaveUser)
 	engine.POST("/login", userHandler.UserLogin)
@@ -39,60 +45,78 @@ func NewServerHTTP(userHandler *handler.UserHandler, productHandler *handler.Pro
 	engine.POST("/otplogin", userHandler.VerifyAndSendOtp)
 	engine.POST("/verifyotp", userHandler.VerifyOtp)
 
-	users.DELETE("/account/:id", userHandler.DeleteUserAccount)
-	users.GET("/profile/:id", userHandler.GetUserProfile)
-	users.PUT("/update", userHandler.UpdateUser)
-	/*users.GET("/readbook", userHandler.ReadBook)
-	users.GET("/premium",userHandler.GetPremium)
-	users.POST("/premium",userHandler.MakePremium)*/
-	users.GET("/home", userHandler.UserHome, productHandler.ListProducts)
-	users.GET("/books", productHandler.ListProducts)
-	users.GET("/book/:id", productHandler.GetProduct)
-	users.GET("/listbooks", productHandler.ListProductsForUSer)
-
-	//admin handlers
+	// admin login
 	engine.GET("/adminlogin", adminHandler.GetLogin)
 	engine.POST("/adminlogin", adminHandler.Login)
 
-	admin.PUT("/blockuser/:id", adminHandler.BlockOrUnBlock)
-	admin.DELETE("/user/:id", adminHandler.Delete)
-	admin.GET("/user/:id", adminHandler.FindByID)
-	admin.GET("/users", adminHandler.ListUsers)
-	admin.GET("/admins", adminHandler.ListAdmins)
-	admin.POST("/addproduct", productHandler.Addproduct)
-	admin.PUT("/editproduct", productHandler.EditProductDet)
-	admin.POST("/addcover/:id", productHandler.AddBookCover)
-	admin.GET("/listbookcovers/:id", productHandler.ListBookCovers)
-	admin.DELETE("/deletebook/:id", productHandler.DeleteProduct)
-	admin.GET("/allorders", orderHandler.GetAllOrders)
-
 	//categories
-	admin.GET("/categorylist", categoryHandler.ListCategories)
-	admin.POST("/addcategory", categoryHandler.AddCategory)
-	admin.PUT("/updatecategory/:id", categoryHandler.UpdateCategory)
-	admin.DELETE("/deletecategory/:id", categoryHandler.DeleteCategory)
+	engine.GET("/categories", categoryHandler.ListCategories) //
+	//book
+	engine.GET("/books/:bookId", productHandler.GetProduct)  // ? not all book is getting ??
+	engine.GET("/books", productHandler.ListProductsForUSer) //
+	//home
+	engine.GET("/home", userHandler.UserHome, productHandler.ListProducts) ///
+	//web hook reciever (razor pay)
+	engine.POST("/payment/verify", orderHandler.VerifyPayment) ///
 
-	// cart
-	users.POST("/addtocart", cartHandler.AddToCart)
-	users.GET("/cart", cartHandler.GetCart)
-	users.PUT("/updatecart", cartHandler.UpdateQuantity)
-	users.DELETE("/deleteitem", cartHandler.DeleteFromCart)
+	users := engine.Group("/user", middleware.UserAuthorizationMiddleware)
+	{
+		users.DELETE("/account", userHandler.DeleteUserAccount) //
+		users.GET("/profile", userHandler.GetUserProfile)       //
+		users.PUT("/profile", userHandler.UpdateUser)           ///
 
-	// order
-	users.POST("/addorder", orderHandler.AddOrder)
-	users.DELETE("/cancelorder", orderHandler.CancelOrder)
-	users.GET("/getorder", orderHandler.GetOrder)
-	users.GET("/listorder", orderHandler.ListOrders)
+		// cart
+		users.POST("/cart", cartHandler.AddToCart)        //
+		users.GET("/cart", cartHandler.GetCart)           //
+		users.PUT("/cart", cartHandler.UpdateQuantity)    //
+		users.DELETE("/cart", cartHandler.DeleteFromCart) //
+		// order
+		users.POST("/orders", orderHandler.AddOrder)                  //
+		users.DELETE("/orders/:orderId", orderHandler.CancelOrder)    //
+		users.GET("/orders/:orderId", orderHandler.GetOrder)          //
+		users.GET("/orders", orderHandler.ListOrders)                 //
+		users.POST("/orders/:orderId/retry", orderHandler.RetryOrder) //
+		// address
+		users.POST("/addresses", addressHandler.AddAddress)                 //
+		users.PUT("/addresses/:addressId", addressHandler.UpdateAddress)    //
+		users.DELETE("/addresses/:addressId", addressHandler.DeleteAddress) //
+		users.GET("/addresses/:addressId", addressHandler.GetAddress)       //
+		users.GET("addresses", addressHandler.ListAddress)                  //
+		//invoice
+		users.GET("/invoice/:orderId", orderHandler.DownloadInvoice)
+	}
+	admin := engine.Group("/admin", middleware.AdminAuthorizationMiddleware)
+	{
+		//users
+		admin.PUT("/users/:userId/block", adminHandler.BlockOrUnBlock) //
+		admin.DELETE("/users/:userId", adminHandler.Delete)            //
+		admin.GET("/users/:userId", adminHandler.FindByID)             //
+		admin.GET("/users", adminHandler.ListUsers)                    //
+		//admins
+		admin.GET("/admins", adminHandler.ListAdmins) //
+		//books
+		admin.POST("/books", productHandler.Addproduct)                   //
+		admin.PUT("/books/:bookId", productHandler.EditProductDet)        //
+		admin.GET("/books", productHandler.ListProducts)                  //
+		admin.DELETE("/books/:bookId", productHandler.DeleteProduct)      //
+		admin.POST("books/:bookId/cover", productHandler.AddBookCover)    //
+		admin.GET("/books/:bookId/covers", productHandler.ListBookCovers) //
+		//orders
+		admin.GET("/allorders", orderHandler.GetAllOrders)
+		admin.GET("/topten", orderHandler.GetTopTen)
+		//sales chart
+		admin.GET("/chart", orderHandler.GetChart)
+		//category
+		admin.POST("/categories", categoryHandler.AddCategory)                  //
+		admin.PUT("/categories/:categoryId", categoryHandler.UpdateCategory)    //
+		admin.DELETE("/categories/:categoryId", categoryHandler.DeleteCategory) //
 
-	// address
-	users.POST("/addaddress", addressHandler.AddAddress)
-	users.PUT("/updateaddress", addressHandler.UpdateAddress)
-	users.DELETE("/deleteaddress", addressHandler.DeleteAddress)
-	users.GET("/getaddress", addressHandler.GetAddress)
-	users.GET("/listaddresses", addressHandler.ListAddress)
+	}
 
-	//
-	users.POST("/verifypayment", orderHandler.VerifyPayment)
+	/*users.GET("/readbook", userHandler.ReadBook)
+	users.GET("/premium",userHandler.GetPremium)
+	users.POST("/premium",userHandler.MakePremium)*/
+
 	return &ServerHTTP{engine: engine}
 }
 

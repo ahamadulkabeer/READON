@@ -17,36 +17,43 @@ func NewCartRepository(DB *gorm.DB) interfaces.CartRepository {
 	}
 }
 
-// just getting the whole data ecxept the cart id pk
-// i dont dont knoe why i amnot even using the pk here !!
-func (c CartDatabase) AddItem(item domain.Cart, userId int) error {
+func (c CartDatabase) AddItem(item domain.Cart) error {
 	err := c.DB.Model(&domain.Cart{}).Save(&item).Error
 	return err
 }
 
-func (c CartDatabase) UpdateQty(userId, bookId, NQty int) error {
-	err := c.DB.Model(&domain.Cart{}).Where("user_id = ? AND book_id = ? ", userId, bookId).Update("Quantity", NQty).Error
+func (c CartDatabase) UpdateQty(userID, bookID, nQty int) error {
+	err := c.DB.Model(&domain.Cart{}).Where("user_id = ? AND book_id = ? ", userID, bookID).Update("Quantity", nQty).Error
 	return err
 }
-func (c CartDatabase) DeleteItem(userId, bookId int) error {
-	err := c.DB.Where("user_id = ? AND book_id = ?", userId, bookId).Delete(&domain.Cart{}).Error
+func (c CartDatabase) DeleteItem(userID, bookID int) error {
+	err := c.DB.Where("user_id = ? AND book_id = ?", userID, bookID).Delete(&domain.Cart{}).Error
 	return err
 }
-func (c CartDatabase) GetItems(userId int) ([]domain.Cart, error) {
+
+func (c CartDatabase) GetItems(userID int) ([]domain.Cart, error) {
 	var list []domain.Cart
-	err := c.DB.Model(&domain.Cart{}).Where("user_id = ?", userId).Find(&list).Error
+	err := c.DB.Model(&domain.Cart{}).Where("user_id = ?", userID).Find(&list).Error
 
 	return list, err
 }
 
-// a little bit confusion here
-// it returnsthe qty as zero as there is no results ...
-// and it interepted as  there is no record exist !
-func (c CartDatabase) CheckForItem(userId, bookId int) (int, error) {
+func (c CartDatabase) CheckForItem(userID, bookID int) (int, error) {
 	var qty int64
-	result := c.DB.Model(&domain.Cart{}).Select("quantity").Where("user_id = ? AND book_id = ?", userId, bookId).Find(&qty)
+	result := c.DB.Model(&domain.Cart{}).Select("quantity").Where("user_id = ? AND book_id = ?", userID, bookID).Find(&qty)
 	if result.Error != nil {
 		return 0, result.Error
 	}
 	return int(qty), nil
 }
+
+func (c CartDatabase) GetTotalCartPrice(userID int) (float64, error) {
+	var totalPrice float64
+	err := c.DB.Model(&domain.Cart{}).Where("user_id = ?", userID).Select("SUM(price) as total_price").Scan(&totalPrice).Error
+	if err != nil {
+		return 0.0, err
+	}
+	return totalPrice, nil
+}
+
+// i say this is cart repo . but never once i used cart id :)

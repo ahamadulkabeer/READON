@@ -3,6 +3,7 @@ package helpers
 import (
 	"errors"
 	"fmt"
+	"net/mail"
 	"readon/pkg/domain"
 	"readon/pkg/models"
 	"regexp"
@@ -18,7 +19,7 @@ func ValidateUserData(user *domain.User) error {
 
 	validate.RegisterValidation("name", validateName)
 	validate.RegisterValidation("password", validatePassword)
-
+	validate.RegisterValidation("email", validateEmail)
 	if err := validate.Struct(user); err != nil {
 		// Validation failed
 		fmt.Println("Validation Error:", err)
@@ -30,7 +31,7 @@ func ValidateUserData(user *domain.User) error {
 	return nil
 }
 
-func ValidateUserUPdateData(user *models.UpdateData) error {
+func ValidateUserUPdateData(user *models.UserUpdateData) error {
 
 	validate.RegisterValidation("name", validateName)
 
@@ -81,6 +82,17 @@ func validatePassword(fl validator.FieldLevel) bool {
 	return false
 }
 
+func validateEmail(fl validator.FieldLevel) bool {
+	email := fl.Field().String()
+	if validateAlphanumericPlus(email) {
+		_, err := mail.ParseAddress(email)
+		if err == nil {
+			fmt.Println("here email return true ?????/")
+			return true
+		}
+	}
+	return false
+}
 func validateAlphanumeric(value string) bool {
 	alphaNumericRegex := "^[a-zA-Z0-9]+$"
 	return regexp.MustCompile(alphaNumericRegex).MatchString(value)

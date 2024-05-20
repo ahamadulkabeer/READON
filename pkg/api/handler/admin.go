@@ -45,7 +45,7 @@ func (cr AdminHandler) GetLogin(c *gin.Context) {
 // @Failure 401 {object} models.ErrorResponse "Unauthorized"
 // @Router /adminlogin [post]
 func (cr AdminHandler) Login(c *gin.Context) {
-	var admin models.Userlogindata
+	var admin models.LoginData
 	err := c.Bind(&admin)
 	if err != nil {
 		errResponse := models.ErrorResponse{
@@ -105,7 +105,7 @@ func (cr *AdminHandler) ListAdmins(c *gin.Context) {
 // @description jwt temp:  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIn0.bw-k7fjfW6nY9DIBZ46ZcJG0IdaYclwHW7P7IPwuNoQ
 // @tags Admin
 // @produce json
-// @Router /admin/users [get]
+// @Router /admin/users [post]
 // @Param page query int false "Page number for pagination (default: 1)"
 // @Param search query string false "Search word if any"
 // @Security Bearer
@@ -120,7 +120,7 @@ func (cr AdminHandler) ListUsers(c *gin.Context) {
 	if err != nil {
 		errResponse := models.ErrorResponse{
 			Err:    err.Error(),
-			Status: "Error while converting category id",
+			Status: "Error while parsing data",
 			Hint:   "please try again",
 		}
 		c.JSON(http.StatusBadRequest, errResponse)
@@ -129,7 +129,7 @@ func (cr AdminHandler) ListUsers(c *gin.Context) {
 
 	log.Println("query got :", pagedetails)
 
-	users, numOfResult, err := cr.AdminUseCase.ListUsers(&pagedetails)
+	users, numOfResult, err := cr.AdminUseCase.ListUsers(pagedetails)
 	log.Println("total num of results", numOfResult)
 	if err != nil {
 		errResponse := models.ErrorResponse{
@@ -143,7 +143,7 @@ func (cr AdminHandler) ListUsers(c *gin.Context) {
 
 	log.Println("page detail", pagedetails)
 
-	response := models.UselistResponse{
+	response := models.UserlistResponse{
 		Pagination: pagedetails,
 		List:       users,
 	}
@@ -162,7 +162,7 @@ func (cr AdminHandler) ListUsers(c *gin.Context) {
 // @Failure 404 {object} models.ErrorResponse "Not Found"
 // @Router /admin/user/{id} [get]
 func (cr *AdminHandler) FindByID(c *gin.Context) {
-	paramsId := c.Param("id")
+	paramsId := c.Param("userId")
 	id, err := strconv.Atoi(paramsId)
 
 	if err != nil {
@@ -203,7 +203,7 @@ func (cr *AdminHandler) FindByID(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse "Internal Server Error"
 // @Router /admin/user/{id} [delete]
 func (cr *AdminHandler) Delete(c *gin.Context) {
-	paramsId := c.Param("id")
+	paramsId := c.Param("userId")
 	id, err := strconv.Atoi(paramsId)
 	if err != nil {
 		errResponse := models.ErrorResponse{
@@ -252,7 +252,7 @@ func (cr *AdminHandler) Delete(c *gin.Context) {
 // @Failure 400 {object} models.ErrorResponse "Bad Request"
 // @Router /admin/blockuser/{id} [put]
 func (cr *AdminHandler) BlockOrUnBlock(c *gin.Context) {
-	paramId := c.Param("id")
+	paramId := c.Param("userId")
 	fmt.Println("parmID :", paramId)
 	id, err := strconv.Atoi(paramId)
 
