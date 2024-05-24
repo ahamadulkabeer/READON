@@ -31,8 +31,8 @@ func NewServerHTTP(userHandler *handler.UserHandler,
 
 	// Use logger from Gin
 	engine.Use(gin.Logger())
+	//to dowload invoice form browser without cookie authorisation :)
 	engine.GET("/invoice/:orderId", orderHandler.DownloadInvoice)
-	engine.POST("/coupon")
 	// Swagger docs
 	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	engine.LoadHTMLGlob("pkg/templates/*.html")
@@ -110,6 +110,10 @@ func NewServerHTTP(userHandler *handler.UserHandler,
 		admin.POST("/categories", categoryHandler.AddCategory)                  //
 		admin.PUT("/categories/:categoryId", categoryHandler.UpdateCategory)    //
 		admin.DELETE("/categories/:categoryId", categoryHandler.DeleteCategory) //
+		//coupon
+		engine.POST("/coupon", couponHandler.CreateNewCoupon)
+		engine.DELETE("/coupon/:id", couponHandler.DeleteCoupon)
+		engine.GET("/coupon/all", couponHandler.ListAllCoupon)
 
 	}
 

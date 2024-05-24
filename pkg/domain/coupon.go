@@ -8,12 +8,15 @@ import (
 
 type Coupon struct {
 	gorm.Model
-	CouponName      string `gorm:"unique; not null"`
-	Description     string
-	DeductionType   string
-	DeductionAmount int
-	ValidFrom       time.Time
-	ValidTill       time.Time
+	Name           string `gorm:"unique; not null"`
+	Description    string
+	DiscountType   string
+	DiscountAmount int
+	ValidFrom      time.Time
+	ValidTill      time.Time
+	MaxQuantity    int
+	IsBound        bool
+	Expired        bool
 }
 
 type UserCoupon struct {

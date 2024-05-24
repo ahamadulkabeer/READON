@@ -12,9 +12,22 @@ import (
 )
 
 // GO - VALIDATOR
-// should be moved the middleware  i think
+
 var validate = validator.New()
 
+var AlphaNumericRegex = "^[a-zA-Z0-9]+$"
+
+var AlphaNumericRegexPlus = "^[a-zA-Z0-9@#$%^&*()_+-=[\\]{}|;:'\",.<>?!/\\\\]+$"
+
+func validateAlphanumeric(value string) bool {
+	return regexp.MustCompile(AlphaNumericRegex).MatchString(value)
+}
+
+func validateAlphanumericPlus(value string) bool {
+	return regexp.MustCompile(AlphaNumericRegexPlus).MatchString(value)
+}
+
+// userdata validation
 func ValidateUserData(user *domain.User) error {
 
 	validate.RegisterValidation("name", validateName)
@@ -46,24 +59,6 @@ func ValidateUserUPdateData(user *models.UserUpdateData) error {
 	return nil
 }
 
-func ValidateCategory(category string) error {
-
-	if category == "" {
-		return errors.New("category must not be empty")
-	}
-	if len(category) < 2 || len(category) > 20 {
-		return errors.New("category must be atleast 2 letters ; max 20")
-	}
-	match, err := regexp.MatchString("^[a-zA-Z0-9]*$", category)
-	if err != nil {
-		return err
-	}
-	if !match {
-		return fmt.Errorf("category must contain only letters and digits")
-	}
-	return nil
-}
-
 func validateName(fl validator.FieldLevel) bool {
 	name := fl.Field().String()
 
@@ -87,18 +82,26 @@ func validateEmail(fl validator.FieldLevel) bool {
 	if validateAlphanumericPlus(email) {
 		_, err := mail.ParseAddress(email)
 		if err == nil {
-			fmt.Println("here email return true ?????/")
 			return true
 		}
 	}
 	return false
 }
-func validateAlphanumeric(value string) bool {
-	alphaNumericRegex := "^[a-zA-Z0-9]+$"
-	return regexp.MustCompile(alphaNumericRegex).MatchString(value)
-}
 
-func validateAlphanumericPlus(value string) bool {
-	alphaNumericRegex := "^[a-zA-Z0-9@#$%^&*()_+-=[\\]{}|;:'\",.<>?!/\\\\]+$"
-	return regexp.MustCompile(alphaNumericRegex).MatchString(value)
+func ValidateCategory(category string) error {
+
+	if category == "" {
+		return errors.New("category must not be empty")
+	}
+	if len(category) < 2 || len(category) > 20 {
+		return errors.New("category must be atleast 2 letters ; max 20")
+	}
+	match, err := regexp.MatchString("^[a-zA-Z0-9]*$", category)
+	if err != nil {
+		return err
+	}
+	if !match {
+		return fmt.Errorf("category must contain only letters and digits")
+	}
+	return nil
 }

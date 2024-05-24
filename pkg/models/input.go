@@ -1,7 +1,5 @@
 package models
 
-import "time"
-
 type SignupData struct {
 	Name     string `copier:"must" form:"name"`
 	Email    string `copier:"must" form:"email"`
@@ -42,12 +40,13 @@ type ProductUpdate struct {
 }
 
 type Coupon struct {
-	Name           string
-	CouponPrefix   string
-	ValidFrom      time.Time
-	ValidTill      time.Time
-	MaxQuantity    int
-	DiscountType   string
-	DiscountAmount int
-	IsBound        bool
+	Name           string `form:"name"`
+	Description    string `form:"description"`
+	CouponPrefix   string `form:"prefix"`
+	ValidFrom      string `form:"validfrom"`
+	ValidTill      string `form:"validtill"`
+	MaxQuantity    int    `form:"quantity"`
+	DiscountType   string `form:"type"`
+	DiscountAmount int    `form:"amount"`
+	IsBound        bool   `form:"isbound"`
 }

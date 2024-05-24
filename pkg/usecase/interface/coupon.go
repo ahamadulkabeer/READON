@@ -6,5 +6,7 @@ import (
 )
 
 type CouponUsecase interface {
-	AddNewCoupon(newCoupon models.Coupon) responses.Response
+	CreateNewCoupon(newCoupon models.Coupon) responses.Response
+	DeleteCoupon(couponID uint) responses.Response
+	ListAllCoupon(pageDet models.Pagination) responses.Response
 }

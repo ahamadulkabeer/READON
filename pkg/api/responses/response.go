@@ -21,18 +21,18 @@ func RespondWithSuccess(status int, message string, data interface{}) models.Suc
 	}
 }
 
-func ClientReponse(status int, message string, err error, data interface{}) Response {
+func ClientReponse(statusCode int, message string, err interface{}, data interface{}) Response {
 	return Response{
-		Status:  status,
-		Message: message,
-		Error:   err,
-		Data:    data,
+		StatusCode: statusCode,
+		Message:    message,
+		Error:      err,
+		Data:       data,
 	}
 }
 
 type Response struct {
-	Status  int
-	Message string
-	Error   error
-	Data    interface{}
+	StatusCode int
+	Message    string
+	Error      interface{}
+	Data       interface{}
 }
