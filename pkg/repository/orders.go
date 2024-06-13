@@ -20,10 +20,10 @@ func NewOrdersRepository(db *gorm.DB) interfaces.OrderRepository {
 	}
 }
 
-func (c OrderDatabse) CreateOrder(order domain.Order, cart []domain.Cart) error {
+func (c OrderDatabse) CreateOrder(order *domain.Order, cart []domain.Cart) error {
 	fmt.Println("in db create order  : \n", order)
 	tx := c.DB.Begin()
-	result := tx.Save(&order)
+	result := tx.Create(order)
 	if result.Error != nil {
 		tx.Rollback()
 		return result.Error

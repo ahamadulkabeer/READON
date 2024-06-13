@@ -49,10 +49,21 @@ func (cr OrderHAndler) AddOrder(c *gin.Context) {
 			"Error while converting addressId", err.Error()))
 		return
 	}
+
+	couponsApplied := c.Query("coupons")
+	var couponsSlice []string
+	err = json.Unmarshal([]byte(couponsApplied), &couponsSlice)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
+			"Invalid coupons JSON format", err.Error(), couponsApplied))
+		fmt.Println("error while unmarshalling coupons array")
+		return
+	}
+	fmt.Println("coupon applied  : ", couponsSlice)
 	userID := c.GetInt("userId")
 
 	// response may be a string razor order id
-	razorOrderId, err := cr.OrderUseCase.CreateOrder(userID, addressID, paymentMethoadId)
+	razorOrderId, err := cr.OrderUseCase.CreateOrder(userID, addressID, paymentMethoadId, couponsSlice)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, responses.RespondWithError(http.StatusBadRequest,
 			"could not place order ", err.Error()))

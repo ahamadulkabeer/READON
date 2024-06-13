@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"readon/pkg/api/helpers"
 	"readon/pkg/api/responses"
 	"readon/pkg/domain"
 	"readon/pkg/models"
@@ -72,4 +73,36 @@ func (c CouponUsecase) ListAllCoupon(pageDet models.Pagination) responses.Respon
 		return responses.ClientReponse(http.StatusNotFound, "coupons not found", nil, nil)
 	}
 	return responses.ClientReponse(http.StatusOK, "coupon returived successfully", nil, list) // code ?
+}
+
+func (c CouponUsecase) IssueCoupon(userID, couponID uint) responses.Response {
+	coupon, err := c.CouponRepo.GetCouponByID(couponID)
+	if err != nil {
+		return responses.ClientReponse(http.StatusNotFound, fmt.Sprint("coupon with id :", couponID, " not found"),
+			err.Error(), nil)
+	}
+	couponCode := helpers.GenerateCouponCode(coupon.Prefix)
+	fmt.Println("coupon code :", couponCode)
+	userCoupon := domain.UserCoupon{
+		UserID:     userID,
+		CouponID:   couponID,
+		CouponCode: couponCode,
+	}
+	err = c.CouponRepo.IssueCoupon(userCoupon)
+	if err != nil {
+		return responses.ClientReponse(http.StatusInternalServerError,
+			"couldnt issue coupon to user", err.Error(), nil)
+	}
+	return responses.ClientReponse(http.StatusCreated,
+		fmt.Sprint("coupon issued to user : ", couponCode), nil, map[string]string{"coupon code ": couponCode})
+}
+
+func (c CouponUsecase) ListCouponsbyUser(userID uint) responses.Response {
+	list, err := c.CouponRepo.ListCouponsbyUser(userID)
+	if err != nil {
+		responses.ClientReponse(http.StatusInternalServerError,
+			fmt.Sprint("couldnt retieve coupons on user id : ", userID), err.Error(), nil)
+	}
+	return responses.ClientReponse(http.StatusOK,
+		"coupon successfully retrived ", nil, list)
 }

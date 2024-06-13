@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"log"
 	"readon/pkg/domain"
 	"readon/pkg/models"
@@ -45,4 +46,72 @@ func (c CouponDatabase) ListAllCoupon(pageDet models.Pagination) ([]domain.Coupo
 		return []domain.Coupon{}, err
 	}
 	return list, err
+}
+
+func (c CouponDatabase) ListCoupons(userID int, pageDet models.Pagination) ([]domain.UserCoupon, error) {
+	var list []domain.UserCoupon
+	err := c.DB.Where("userid = ?", userID).Find(&list).Error
+	if err != nil {
+		fmt.Println("Db err :", err.Error())
+		return list, err
+
+	}
+	return list, nil
+}
+
+func (c CouponDatabase) GetCouponByID(couponID uint) (domain.Coupon, error) {
+	var coupon domain.Coupon
+	err := c.DB.Model(&domain.Coupon{}).Where("id = ?", couponID).First(&coupon).Error
+	if err != nil {
+		return domain.Coupon{}, err
+	}
+	return coupon, nil
+}
+
+func (c CouponDatabase) IssueCoupon(userCoupon domain.UserCoupon) error {
+	err := c.DB.Create(&userCoupon).Error
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	return nil
+}
+
+func (c CouponDatabase) ListCouponsbyUser(userID uint) ([]domain.UserCoupon, error) {
+	var list []domain.UserCoupon
+	err := c.DB.Where("user_id = ?", userID).Find(&list).Error
+	if err != nil {
+		log.Println(err)
+		return []domain.UserCoupon{}, err
+	}
+	return list, nil
+}
+
+func (c CouponDatabase) UserHasCoupon(userID uint, couponCode string) (bool, domain.UserCoupon, error) {
+	var userCoupon domain.UserCoupon
+	err := c.DB.Model(&domain.UserCoupon{}).Where("user_id = ? AND coupon_code = ?", userID, couponCode). //Preload("Coupons").
+														Find(&userCoupon).Error
+	if err != nil {
+		return false, domain.UserCoupon{}, err
+	}
+	return true, userCoupon, nil
+}
+
+func (c CouponDatabase) MarkCouponAsRedemed(couponCode string, orderID uint) error {
+	err := c.DB.Model(&domain.UserCoupon{}).Where("coupon_code = ?", couponCode).Updates(map[string]interface{}{"redeemed": true, "redeemed_on": orderID}).Error
+	if err != nil {
+		fmt.Println("db err :", err)
+		return err
+	}
+	return nil
+}
+
+func (c CouponDatabase) DeleteCouponUser(couponCode string) error {
+	err := c.DB.Where("coupon_code = ?", couponCode).Delete(&domain.UserCoupon{}).Error
+
+	if err != nil {
+		fmt.Println("db err :", err)
+		return err
+	}
+	return nil
 }

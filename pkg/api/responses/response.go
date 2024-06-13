@@ -21,7 +21,7 @@ func RespondWithSuccess(status int, message string, data interface{}) models.Suc
 	}
 }
 
-func ClientReponse(statusCode int, message string, err interface{}, data interface{}) Response {
+func ClientReponse(statusCode int, message string, err any, data any) Response {
 	return Response{
 		StatusCode: statusCode,
 		Message:    message,

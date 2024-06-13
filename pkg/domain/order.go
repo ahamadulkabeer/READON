@@ -12,6 +12,8 @@ type Order struct {
 	PaymentID       string
 	TotalQuantity   int
 	TotalPrice      float64
+	DiscountedPrice float64
+	TotalDiscount   float64
 	DeleveryCharge  float64
 	Status          string
 	User            User          `gorm:"forienkey:UserID;OnDelete:CASCADE,OnUpdate:CASCADE"`

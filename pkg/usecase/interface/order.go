@@ -6,7 +6,7 @@ import (
 )
 
 type OrderUseCase interface {
-	CreateOrder(userID, addressID, paymentMethoadID int) (string, error)
+	CreateOrder(userID, addressID, paymentMethoadID int, coupons []string) (string, error)
 	RetryOrder(userID, orderID int) (string, error)
 	CancelOrder(userID, orderID int) error
 	ListOrders(userID int, pagination models.Pagination) ([]models.OrdersListing, error)

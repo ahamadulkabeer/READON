@@ -15,7 +15,7 @@ func HashPassword(password string) (string, error) {
 	return string(hashedPassword), nil
 }
 
-func ValidatePassword(passwordStr, inputPassword string) (bool, error) {
+func AuthenticatePassword(passwordStr, inputPassword string) (bool, error) {
 	password := make([]byte, len(passwordStr))
 	for i, x := range passwordStr {
 		password[i] = byte(x)

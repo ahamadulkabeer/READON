@@ -7,7 +7,7 @@ import (
 )
 
 type OrderRepository interface {
-	CreateOrder(order domain.Order, cart []domain.Cart) error
+	CreateOrder(order *domain.Order, cart []domain.Cart) error
 
 	GetOrder(userID, orderID int) (domain.Order, error)
 	ListOrders(userID int, pageDetails models.Pagination) ([]domain.Order, error)

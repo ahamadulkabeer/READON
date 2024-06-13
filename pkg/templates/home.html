@@ -1,0 +1,93 @@
+{{ define "index" }}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <title>Home</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+
+        nav {
+            background-color: #333;
+            color: #fff;
+            padding: 10px 20px;
+        }
+
+        nav ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        nav ul li {
+            display: inline;
+            margin-right: 20px;
+        }
+
+        nav ul li a {
+            text-decoration: none;
+            color: #fff;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .card {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="">Profile</a></li>
+            <li><a href="/signup">SignUp</a></li>
+        </ul>
+    </nav>
+    <div class="container">
+        <div class="card">
+            <h2>Section 1</h2>
+            <p>This is the content of section 1.</p>
+        </div>
+        <div class="card">
+            <h2>Section 2</h2>
+            <p>This is the content of section 2.</p>
+        </div>
+        <div class="card">
+            <h2>Section 3</h2>
+            <p>This is the content of section 3.</p>
+        </div>
+
+        {{ template "footer" }}
+    </div>
+</body>
+</html>
+
+
+{{ end }}
+
+
+{{ block "footer" .}}
+
+   <h2>footer here </h2>
+
+{{ end }}
+
+
+
+

@@ -15,7 +15,7 @@ type UserRepository interface {
 	BlockOrUnBlock(int) bool
 
 	//Authorise(user models.Userlogindata) (int, bool, error)
-	CheckForEmail(string) error
+	CheckForEmail(email string) (bool, error)
 	SaveOtp(string, string) error
 	VerifyOtp(string, string) error
 }

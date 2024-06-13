@@ -67,7 +67,7 @@ func (cr AdminHandler) Login(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, errResponse)
 		return
 	}
-	tokenString := middleware.GetTokenString(id, "admin", false)
+	tokenString := middleware.GetTokenString(uint(id), "admin", false)
 
 	response := "logged in  || TOKENSTRING : " + tokenString
 

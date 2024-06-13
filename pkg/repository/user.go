@@ -80,18 +80,26 @@ func (c userDatabase) BlockOrUnBlock(id int) bool {
 
 func (c *userDatabase) FindByEmail(email string) (domain.User, error) {
 	var user domain.User
-	db := c.DB.Where("email = ?", email).Find(&user)
+	db := c.DB.Where("email = ?", email).Find(&user).Limit(1)
+	if db.Error != nil {
+		return user, db.Error
+	}
 	if db.RowsAffected <= 0 {
 		return user, errors.New("email not found")
 	}
-	log.Println("login user details : ", user)
 	return user, nil
 }
 
-func (c userDatabase) CheckForEmail(email string) error {
+func (c userDatabase) CheckForEmail(email string) (bool, error) {
 	var user domain.User
-	result := c.DB.Where("email = ?", email).First(&user)
-	return result.Error
+	result := c.DB.Where("email = ?", email).Find(&user).Limit(1)
+	if result.Error != nil {
+		return false, result.Error
+	}
+	if result.RowsAffected > 0 {
+		return true, nil
+	}
+	return false, nil
 }
 
 func (c userDatabase) SaveOtp(otp, email string) error {

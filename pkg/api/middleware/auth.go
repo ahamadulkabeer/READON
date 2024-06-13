@@ -7,7 +7,7 @@ import (
 )
 
 // creating token string from data
-func GetTokenString(id int, role string, premium bool) string {
+func GetTokenString(id uint, role string, premium bool) string {
 
 	claims := jwt.MapClaims{
 		"id":      id,

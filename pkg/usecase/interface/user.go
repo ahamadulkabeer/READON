@@ -1,16 +1,17 @@
 package interfaces
 
 import (
+	"readon/pkg/api/responses"
 	domain "readon/pkg/domain"
 	"readon/pkg/models"
 )
 
 type UserUseCase interface {
-	Save(models.SignupData) (domain.User, error)
+	Save(userInput models.SignupData) responses.Response
 
 	UpdateUser(user models.UserUpdateData) (domain.User, error)
 
-	UserLogin(userinput models.LoginData) (int, bool, bool, error)
+	UserLogin(userinput models.LoginData) responses.Response
 
 	GetUserProfile(int) (domain.User, error)
 

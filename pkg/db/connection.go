@@ -7,7 +7,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	config "readon/pkg/config"
+	config "readon/config"
 	domain "readon/pkg/domain"
 )
 

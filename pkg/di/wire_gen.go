@@ -9,7 +9,7 @@ package di
 import (
 	"readon/pkg/api"
 	"readon/pkg/api/handler"
-	"readon/pkg/config"
+	"readon/config"
 	"readon/pkg/db"
 	"readon/pkg/repository"
 	"readon/pkg/usecase"
@@ -48,13 +48,15 @@ func InitializeAPI(cfg config.Config) (*http.ServerHTTP, error) {
 	addressUseCase := usecase.NewAddressUsecase(addressRepository)
 	addressHandler := handler.NewAddressHandler(addressUseCase)
 
-	orderRepository := repository.NewOrdersRepository(gormDB)
-	orderUsecase := usecase.NewOrderUseCase(orderRepository,cartRepository,addressRepository,productRepository)
-	orderHandler := handler.NewOrderHandler(orderUsecase)
-
 	couponRepository := repository.NewCouponRepository(gormDB)
 	couponUseCase := usecase.NewCouponUseCase(couponRepository)
 	couponHandler := handler.NewCouponHandler(couponUseCase)
+
+	orderRepository := repository.NewOrdersRepository(gormDB)
+	orderUsecase := usecase.NewOrderUseCase(orderRepository,cartRepository,addressRepository,productRepository,couponRepository)
+	orderHandler := handler.NewOrderHandler(orderUsecase)
+
+	
 
 	
 

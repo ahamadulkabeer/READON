@@ -1,6 +1,8 @@
 package http
 
 import (
+	"net/http"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	swaggerfiles "github.com/swaggo/files"
@@ -26,16 +28,27 @@ func NewServerHTTP(userHandler *handler.UserHandler,
 
 	engine := gin.New()
 	engine.Use(cors.Default())
+	engine.Use(gin.Logger())                    // Use logger from Gin
+	engine.LoadHTMLGlob("pkg/templates/*.html") // parse template
 
-	//engine.LoadHTMLGlob("../templates/*")
+	engine.GET("/", func(ctx *gin.Context) {
+		if ctx.GetHeader("Accept") == "application/json" {
+			ctx.JSON(http.StatusOK, gin.H{
+				"data": "foo",
+			})
+			return
+		}
+		ctx.HTML(http.StatusOK, "index", nil)
 
-	// Use logger from Gin
-	engine.Use(gin.Logger())
+	})
+
 	//to dowload invoice form browser without cookie authorisation :)
 	engine.GET("/invoice/:orderId", orderHandler.DownloadInvoice)
+
 	// Swagger docs
 	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
-	engine.LoadHTMLGlob("pkg/templates/*.html")
+	//
+
 	//user login / sign up
 	engine.GET("/signup", userHandler.GetSignup)
 	engine.POST("/signup", userHandler.SaveUser)
@@ -114,6 +127,8 @@ func NewServerHTTP(userHandler *handler.UserHandler,
 		engine.POST("/coupon", couponHandler.CreateNewCoupon)
 		engine.DELETE("/coupon/:id", couponHandler.DeleteCoupon)
 		engine.GET("/coupon/all", couponHandler.ListAllCoupon)
+		engine.POST("/user/:userId/coupon/:couponId", couponHandler.IssueCouponToUser)
+		engine.GET("/user/:userId", couponHandler.ListCouponsbyUser) // get users all coupon
 
 	}
 

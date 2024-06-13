@@ -18,29 +18,34 @@ type OrderUseCase struct {
 	CartRepo    interfaces.CartRepository
 	AddressRepo interfaces.AddressRepository
 	ProductRepo interfaces.ProductRepository
+	CouponRepo  interfaces.CouponRepository
 }
 
-func NewOrderUseCase(orepo interfaces.OrderRepository, crepo interfaces.CartRepository, arepo interfaces.AddressRepository, prepo interfaces.ProductRepository) services.OrderUseCase {
+func NewOrderUseCase(orepo interfaces.OrderRepository, crepo interfaces.CartRepository, arepo interfaces.AddressRepository, prepo interfaces.ProductRepository, coupRepo interfaces.CouponRepository) services.OrderUseCase {
 	return &OrderUseCase{
 		OrderRepo:   orepo,
 		CartRepo:    crepo,
 		AddressRepo: arepo,
 		ProductRepo: prepo,
+		CouponRepo:  coupRepo,
 	}
 }
 
-func (c OrderUseCase) CreateOrder(userID, addressID, PaymentMethodID int) (string, error) {
+func (c OrderUseCase) CreateOrder(userID, addressID, PaymentMethodID int, coupons []string) (string, error) {
 
 	cart, err := c.CartRepo.GetItems(userID)
 	if err != nil {
 		fmt.Println("err : ", err)
 		return "", err
 	}
-	totalQTY := 0
-	totalPrice := 0.0
 	if len(cart) == 0 {
 		return "", errors.New("cart is empty")
 	}
+
+	totalQTY := 0
+	totalPrice := 0.00
+	discount := 0.00
+
 	for _, items := range cart {
 		totalQTY += items.Quantity
 		totalPrice += items.Price * float64(items.Quantity)
@@ -48,13 +53,41 @@ func (c OrderUseCase) CreateOrder(userID, addressID, PaymentMethodID int) (strin
 	//to do coupon ???
 	//var discountedPrice float64
 
+	for _, coupon := range coupons {
+		fmt.Println("coupn :", coupon)
+		found, userCoupon, err := c.CouponRepo.UserHasCoupon(uint(userID), coupon)
+		if err != nil {
+			fmt.Println("db err : ", err)
+			return "", err
+		}
+		if !found {
+			fmt.Println("coupon :", coupon, "not found")
+			return "", err
+		}
+		coup, err := c.CouponRepo.GetCouponByID(userCoupon.CouponID)
+		if err != nil {
+			fmt.Println("err when getting coupon :", err)
+		}
+		userCoupon.Coupon = coup
+
+		if userCoupon.Coupon.DiscountType == "percentage" {
+			discount += (totalPrice / 100) * float64(userCoupon.Coupon.DiscountAmount)
+		} else {
+			discount += float64(userCoupon.Coupon.DiscountAmount)
+		}
+	}
+
+	discountedPrice := totalPrice - discount
+
 	order := domain.Order{
 		UserID:          uint(userID),
 		AdressID:        uint(addressID),
 		PaymentMethodID: uint(PaymentMethodID),
 		TotalQuantity:   totalQTY,
 		TotalPrice:      totalPrice,
-		DeleveryCharge:  49.0, // fixed for now
+		DiscountedPrice: discountedPrice,
+		TotalDiscount:   discount,
+		DeleveryCharge:  49.00, // fixed (for now)
 		Status:          "processing",
 	}
 
@@ -74,11 +107,16 @@ func (c OrderUseCase) CreateOrder(userID, addressID, PaymentMethodID int) (strin
 		order.RazorPayOrderID = razorOrderId
 	}
 	// creates order and clears cart
-	err = c.OrderRepo.CreateOrder(order, cart)
+	err = c.OrderRepo.CreateOrder(&order, cart)
 	if err != nil {
 		return "", errors.New("couldnt create order : db error")
 	}
+	for _, coupon := range coupons {
+		fmt.Println("coupn :", coupon)
+		c.CouponRepo.MarkCouponAsRedemed(coupon, order.ID)
+	}
 	return razorOrderId, nil
+
 }
 
 func (c OrderUseCase) RetryOrder(userID, orderID int) (string, error) {
@@ -94,10 +132,7 @@ func (c OrderUseCase) RetryOrder(userID, orderID int) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// err = c.OrderRepo.UpdateRazorOrderId(userID, orderID, RazorOrderID) //: why update  ? as there is nothing to update as no changes made
-	// if err != nil {
-	// 	return "", err
-	// }
+
 	return RazorOrderID, nil
 }
 

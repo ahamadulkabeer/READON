@@ -8,6 +8,7 @@ import (
 	"github.com/jinzhu/copier"
 
 	"readon/pkg/api/middleware"
+	"readon/pkg/api/responses"
 	models "readon/pkg/models"
 
 	domain "readon/pkg/domain"
@@ -39,8 +40,12 @@ func NewUserHandler(usecase services.UserUseCase) *UserHandler {
 // @Success 200 {string} string "Got HTML page for user login"
 // @Router /login [get]
 func (cr UserHandler) GetLogin(c *gin.Context) {
+	if c.GetHeader("Accept") == "application/json" {
+		c.JSON(http.StatusOK, "got html page : user login")
+		return
+	}
+	c.HTML(http.StatusOK, "login", nil)
 
-	c.JSON(http.StatusOK, "got html page : user login")
 }
 
 // @Summary Save a user
@@ -59,32 +64,29 @@ func (cr *UserHandler) SaveUser(c *gin.Context) {
 	var user models.SignupData
 
 	if err := c.Bind(&user); err != nil {
-		errResponse := models.ErrorResponse{
-			Err:    err.Error(),
-			Status: "error while bindin json save user",
-			Hint:   "please try again",
-		}
-		c.JSON(http.StatusBadRequest, errResponse)
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
+			"error while bindin input data", err.Error(), nil))
 		return
 	}
 	fmt.Println("user in put :", user)
-	// before saving should check authorisation of the email
-	User, err := cr.userUseCase.Save(user)
 
-	if err != nil {
-		errResponse := models.ErrorResponse{
-			Err:    err.Error(),
-			Status: "couldn't Save users",
-			Hint:   "please try again",
-		}
-		c.JSON(http.StatusInternalServerError, errResponse)
+	response := cr.userUseCase.Save(user)
+	if c.GetHeader("Accept") == "application/json" {
+		c.JSON(http.StatusOK, response)
 		return
-	} else {
-		response := models.User{}
-		copier.Copy(&response, &User)
-
-		c.JSON(http.StatusOK, "user signed up successfully")
 	}
+	if response.Error != nil {
+
+		fmt.Println("response ", response)
+	}
+	if response.Error != nil {
+		c.HTML(200, "signup", gin.H{
+			"User":   user,
+			"Errors": response.Error,
+		})
+		return
+	}
+	c.HTML(response.StatusCode, "signup", response)
 }
 
 // UpdateUser updates a user.
@@ -137,7 +139,11 @@ func (cr UserHandler) UpdateUser(c *gin.Context) {
 // @Success 200 {string} string "Successfully got the HTML page"
 // @Router /signup [get]
 func (cr *UserHandler) GetSignup(c *gin.Context) {
-	c.JSON(http.StatusOK, "a signup page here :)")
+	if c.GetHeader("Accept") == "application/json" {
+		c.JSON(http.StatusOK, "a signup page here :)")
+		return
+	}
+	c.HTML(http.StatusOK, "signup", nil)
 }
 
 // UserLogin godoc
@@ -153,35 +159,39 @@ func (cr *UserHandler) GetSignup(c *gin.Context) {
 // @Router /login [post]
 func (cr UserHandler) UserLogin(c *gin.Context) {
 
-	var userinput models.LoginData
-	err := c.Bind(&userinput)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{
-			Err:    "Bad Request",
-			Status: "Could not process the request",
-			Hint:   "Please check your request data",
-		})
+	var userInput models.LoginData
+
+	if err := c.Bind(&userInput); err != nil {
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
+			"error while bindin input data", err.Error(), nil))
 		return
 	}
 	// ckecking the db to match given data and gets the the user id from db in return
-	userid, is_user, isPremium, err := cr.userUseCase.UserLogin(userinput)
-	fmt.Println("error :", err)
-	if !is_user {
-		errresponse := models.ErrorResponse{
-			Err:    err.Error(),
-			Status: " could not login :(",
-			Hint:   "please try again",
+	response := cr.userUseCase.UserLogin(userInput)
+	if response.Error != nil {
+		if c.GetHeader("Accept") == "application/json" {
+			c.JSON(response.StatusCode, response)
+			return
 		}
-		c.JSON(http.StatusUnauthorized, errresponse)
+		c.HTML(http.StatusOK, "login", gin.H{
+			"Data": userInput,
+			"Err":  response.Error,
+		})
 		return
 	}
 
-	tokenString := middleware.GetTokenString(userid, "user", isPremium)
+	user := response.Data.(models.User)
+	tokenString := middleware.GetTokenString(user.ID, "user", user.Permission)
 	c.SetCookie("Authorization", tokenString, 3600, "", "", true, false)
-	Response := "successfully logged in :) || token : " + tokenString
-	c.JSON(http.StatusOK, Response)
+	response.Message += " || token : " + tokenString
 
 	fmt.Println("token string :", tokenString)
+
+	if c.GetHeader("Accept") == "application/json" {
+		c.JSON(response.StatusCode, response)
+		return
+	}
+	c.HTML(response.StatusCode, "index", response.Data)
 }
 
 // @Summary Get user profile
@@ -261,7 +271,11 @@ func (cr *UserHandler) UserHome(c *gin.Context) {
 // @Success 200 {string} string "Got HTML page for OTP login, enter email"
 // @Router /otplogin [get]
 func (cr *UserHandler) GetOtpLogin(c *gin.Context) {
-	c.JSON(http.StatusOK, "got login page !!! enter emil")
+	if c.GetHeader("Accept") == "application/json" {
+		c.JSON(http.StatusOK, "got login page !!! enter emil")
+		return
+	}
+	c.HTML(http.StatusOK, "login", nil)
 }
 
 // VerifyAndSendOtp godoc

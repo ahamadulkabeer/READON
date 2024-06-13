@@ -4,92 +4,63 @@ import (
 	"errors"
 	"fmt"
 	"net/mail"
-	"readon/pkg/domain"
 	"readon/pkg/models"
 	"regexp"
-
-	validator "github.com/go-playground/validator/v10"
 )
 
 // GO - VALIDATOR
 
-var validate = validator.New()
-
 var AlphaNumericRegex = "^[a-zA-Z0-9]+$"
 
-var AlphaNumericRegexPlus = "^[a-zA-Z0-9@#$%^&*()_+-=[\\]{}|;:'\",.<>?!/\\\\]+$"
+var AlphaNumericPlusRegex = "^[a-zA-Z0-9@#$%^&*()_+-=[\\]{}|;:'\",.<>?!/\\\\]+$"
 
 func validateAlphanumeric(value string) bool {
 	return regexp.MustCompile(AlphaNumericRegex).MatchString(value)
 }
 
 func validateAlphanumericPlus(value string) bool {
-	return regexp.MustCompile(AlphaNumericRegexPlus).MatchString(value)
+	return regexp.MustCompile(AlphaNumericPlusRegex).MatchString(value)
 }
 
-// userdata validation
-func ValidateUserData(user *domain.User) error {
+func ValidateName(name string) (bool, error) {
 
-	validate.RegisterValidation("name", validateName)
-	validate.RegisterValidation("password", validatePassword)
-	validate.RegisterValidation("email", validateEmail)
-	if err := validate.Struct(user); err != nil {
-		// Validation failed
-		fmt.Println("Validation Error:", err)
-		return err
+	if len(name) < 4 {
+		return false, errors.New("user name should be atleasst 4 letters")
 	}
 
-	// Validation passed
-	fmt.Println("Validation successful")
-	return nil
-}
-
-func ValidateUserUPdateData(user *models.UserUpdateData) error {
-
-	validate.RegisterValidation("name", validateName)
-
-	if err := validate.Struct(user); err != nil {
-		// Validation failed
-		fmt.Println("Validation Error:", err)
-		return err
+	if len(name) < 4 {
+		return false, errors.New("user name shouldn't be more than 12 letters")
 	}
 
-	// Validation passed
-	fmt.Println("Validation successful")
-	return nil
-}
-
-func validateName(fl validator.FieldLevel) bool {
-	name := fl.Field().String()
-
-	// Check if the name is at least 4 characters long and  // ??contains no letters??
-	if len(name) >= 4 {
-		return validateAlphanumeric(name)
+	ok := validateAlphanumeric(name)
+	if !ok {
+		return false, errors.New("user name should be alphanumeric")
 	}
-	return false
+	return true, nil
 }
 
-func validatePassword(fl validator.FieldLevel) bool {
-	password := fl.Field().String()
-	if len(password) >= 8 {
-		return validateAlphanumericPlus(password)
+func ValidatePassword(password string) (bool, error) {
+	if len(password) < 8 || len(password) > 16 {
+		return false, errors.New("password should should be between 8 to 16 letters")
 	}
-	return false
+	ok := validateAlphanumericPlus(password)
+	if !ok {
+		return false, errors.New("user name should be alphanumericPlus")
+	}
+	return true, nil
 }
 
-func validateEmail(fl validator.FieldLevel) bool {
-	email := fl.Field().String()
+func ValidateEmail(email string) (bool, error) {
 	if validateAlphanumericPlus(email) {
 		_, err := mail.ParseAddress(email)
 		if err == nil {
-			return true
+			return true, nil
 		}
 	}
-	return false
+	return false, errors.New("invalid email")
 }
 
 func ValidateCategory(category string) error {
-
 	if category == "" {
 		return errors.New("category must not be empty")
 	}
@@ -103,5 +74,12 @@ func ValidateCategory(category string) error {
 	if !match {
 		return fmt.Errorf("category must contain only letters and digits")
 	}
+	return nil
+}
+
+func ValidateUserUPdateData(user *models.UserUpdateData) error {
+
+	// Validation passed
+	fmt.Println("Validation successful")
 	return nil
 }

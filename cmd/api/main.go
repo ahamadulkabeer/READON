@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	config "readon/pkg/config"
+	config "readon/config"
 	di "readon/pkg/di"
 )
 
