@@ -28,9 +28,9 @@ func NewServerHTTP(userHandler *handler.UserHandler,
 
 	engine := gin.New()
 	engine.Use(cors.Default())
-	engine.Use(gin.Logger())                    // Use logger from Gin
-	engine.LoadHTMLGlob("pkg/templates/*.html") // parse template
-
+	engine.Use(gin.Logger()) // Use logger from Gin
+	//engine.LoadHTMLGlob("pkg/templates/*.html") // parse template
+	engine.LoadHTMLGlob("/home/kabeer/Projects/READON/pkg/templates/*.html")
 	engine.GET("/", func(ctx *gin.Context) {
 		if ctx.GetHeader("Accept") == "application/json" {
 			ctx.JSON(http.StatusOK, gin.H{
@@ -128,7 +128,7 @@ func NewServerHTTP(userHandler *handler.UserHandler,
 		engine.DELETE("/coupon/:id", couponHandler.DeleteCoupon)
 		engine.GET("/coupon/all", couponHandler.ListAllCoupon)
 		engine.POST("/user/:userId/coupon/:couponId", couponHandler.IssueCouponToUser)
-		engine.GET("/user/:userId", couponHandler.ListCouponsbyUser) // get users all coupon
+		engine.GET("/coupon/:userId", couponHandler.ListCouponsbyUser) // get users all coupon
 
 	}
 

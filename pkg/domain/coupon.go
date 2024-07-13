@@ -8,16 +8,19 @@ import (
 
 type Coupon struct {
 	gorm.Model
-	Name           string `gorm:"unique; not null"`
-	Description    string
-	Prefix         string
-	DiscountType   string
-	DiscountAmount int
-	ValidFrom      time.Time
-	ValidTill      time.Time
-	MaxQuantity    int
-	IsBound        bool
-	Expired        bool
+	Name               string `gorm:"unique; not null"`
+	Description        string
+	Prefix             string
+	DiscountType       string
+	DiscountAmount     int
+	ApplicableOn       string
+	ApplicableCategory string
+	ApplicableProduct  string
+	ValidFrom          time.Time
+	ValidTill          time.Time
+	MaxQuantity        int
+	IsBound            bool
+	Expired            bool
 }
 
 // currently the coupon user has belongsto relationship to coupon

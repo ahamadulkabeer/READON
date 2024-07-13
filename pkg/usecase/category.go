@@ -1,10 +1,10 @@
 package usecase
 
 import (
-	"errors"
-	"fmt"
+	"net/http"
+	"readon/pkg/api/errorhandler"
 	"readon/pkg/api/helpers"
-	"readon/pkg/domain"
+	"readon/pkg/api/responses"
 	interfaces "readon/pkg/repository/interface"
 	services "readon/pkg/usecase/interface"
 )
@@ -19,61 +19,73 @@ func NewCategoryUseCase(repo interfaces.CategoryRepository) services.CategoryUse
 	}
 }
 
-func (c CategoryUseCase) AddCategory(newcategory string) (string, error) {
-	var newCategory domain.Category
-	err := helpers.ValidateCategory(newcategory)
+func (c CategoryUseCase) AddCategory(newCategory string) responses.Response {
+
+	err := helpers.ValidateCategory(newCategory)
 	if err != nil {
-		return "", err
+		return responses.ClientReponse(http.StatusBadRequest, "couldn't add new category", err, nil)
 	}
-	err = c.CategoryRepo.CheckCategory(newcategory)
-	if err == nil {
-		fmt.Println("error == nil catogory already exist getcategory by id")
-		err := errors.New("category already exist")
-		fmt.Println(err)
-		return "", err
-	}
-	newCategory, err = c.CategoryRepo.AddCategory(newcategory)
+	exist, err := c.CategoryRepo.CheckCategory(newCategory)
 	if err != nil {
-		return "", err
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't add new category", err, nil)
 	}
-	return newCategory.Name, nil
+	if exist {
+		return responses.ClientReponse(http.StatusConflict, "couldn't add new category", "category '"+newCategory+"' already exist", nil)
+	}
+	category, err := c.CategoryRepo.AddCategory(newCategory)
+	if err != nil {
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't add new category", err, nil)
+	}
+	return responses.ClientReponse(http.StatusOK, "category created successfully", nil, category)
 }
 
-func (c CategoryUseCase) UpdateCategory(idtoch int, newcategory string) (domain.Category, error) {
+func (c CategoryUseCase) UpdateCategory(IDToUpdate uint, newCategory string) responses.Response {
 
-	var category = domain.Category{Name: newcategory}
-	err := helpers.ValidateCategory(newcategory)
+	err := helpers.ValidateCategory(newCategory)
 	if err != nil {
-		return category, err
+		return responses.ClientReponse(http.StatusBadRequest, "couldn't update category", err, nil)
 	}
-	err = c.CategoryRepo.CheckCategory(newcategory)
-	if err == nil {
-		return category, errors.New("category already exist !")
-	}
-	err = c.CategoryRepo.GetCategoryById(idtoch)
+	exist, err := c.CategoryRepo.CheckCategory(newCategory)
 	if err != nil {
-		return category, errors.New("category to update deos not exist")
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't update category", err, nil)
 	}
-	category, err = c.CategoryRepo.UpdateCategory(idtoch, newcategory)
+	if !exist {
+		return responses.ClientReponse(http.StatusNotFound, "couldn't update category", "category doesn't exist", nil)
+	}
+
+	err = c.CategoryRepo.UpdateCategory(IDToUpdate, newCategory)
 	if err != nil {
-		return category, err
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't update category", err, nil)
 	}
-	return category, err
+	return responses.ClientReponse(http.StatusOK, "category updated ", nil, nil)
 }
 
-func (c CategoryUseCase) DeleteCategory(categoryID int) error {
-	err := c.CategoryRepo.GetCategoryById(categoryID)
+func (c CategoryUseCase) DeleteCategory(categoryID int) responses.Response {
+	exist, err := c.CategoryRepo.GetCategoryById(categoryID)
 	if err != nil {
-		return errors.New("category deos not exist !")
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't delete category", err, nil)
+	}
+	if !exist {
+		return responses.ClientReponse(http.StatusNotFound, "couldn't delete category", "category doesn't exist", nil)
 	}
 	err = c.CategoryRepo.DeleteCategory(categoryID)
 	if err != nil {
-		return err
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't delete category", err, nil)
 	}
-	return nil
+	return responses.ClientReponse(http.StatusOK, "category deleted ", nil, nil)
 }
 
-func (c CategoryUseCase) ListCategories() ([]domain.Category, error) {
+func (c CategoryUseCase) ListCategories() responses.Response {
 	list, err := c.CategoryRepo.ListCategories(100)
-	return list, err
+	if err != nil {
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't fetch list of categories", err, nil)
+	}
+	return responses.ClientReponse(http.StatusOK, "categories fetched ", nil, list)
 }

@@ -61,7 +61,7 @@ func (c userDatabase) DeleteUser(user domain.User) error {
 	return err
 }
 
-func (c userDatabase) BlockOrUnBlock(id int) bool {
+func (c userDatabase) BlockOrUnBlock(id int) (bool, error) {
 	sql := `
 	        UPDATE users
 	        SET permission = CASE
@@ -70,12 +70,17 @@ func (c userDatabase) BlockOrUnBlock(id int) bool {
 	        END
 	        WHERE id = ?`
 
-	c.DB.Exec(sql, id)
-
+	err := c.DB.Exec(sql, id).Error
+	if err != nil {
+		return false, err
+	}
 	var permission bool
 	sql = "SELECT permission FROM users WHERE id = ?"
-	c.DB.Raw(sql, id).Scan(&permission)
-	return permission
+	err = c.DB.Raw(sql, id).Scan(&permission).Error
+	if err != nil {
+		return false, err
+	}
+	return permission, nil
 }
 
 func (c *userDatabase) FindByEmail(email string) (domain.User, error) {

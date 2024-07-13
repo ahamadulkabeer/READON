@@ -72,21 +72,19 @@ func (cr *UserHandler) SaveUser(c *gin.Context) {
 
 	response := cr.userUseCase.Save(user)
 	if c.GetHeader("Accept") == "application/json" {
-		c.JSON(http.StatusOK, response)
+		c.JSON(response.StatusCode, response)
 		return
 	}
-	if response.Error != nil {
 
-		fmt.Println("response ", response)
-	}
 	if response.Error != nil {
-		c.HTML(200, "signup", gin.H{
+		fmt.Println("response ", response)
+		c.HTML(http.StatusBadRequest, "signup", gin.H{
 			"User":   user,
 			"Errors": response.Error,
 		})
 		return
 	}
-	c.HTML(response.StatusCode, "signup", response)
+	c.HTML(response.StatusCode, "login", nil)
 }
 
 // UpdateUser updates a user.

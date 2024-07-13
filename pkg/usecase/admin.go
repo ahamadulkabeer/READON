@@ -1,11 +1,16 @@
 package usecase
 
 import (
-	"fmt"
+	"net/http"
+	"readon/pkg/api/errorhandler"
+	"readon/pkg/api/middleware"
+	"readon/pkg/api/responses"
 	domain "readon/pkg/domain"
 	"readon/pkg/models"
 	interfaces "readon/pkg/repository/interface"
 	services "readon/pkg/usecase/interface"
+
+	"github.com/gin-gonic/gin"
 )
 
 type AdminUseCase struct {
@@ -20,15 +25,30 @@ func NewAdminUsecase(adminrepo interfaces.AdminRepository, userrepo interfaces.U
 	}
 }
 
-func (c AdminUseCase) Login(admin models.LoginData) (int, bool) {
-	return c.adminRepo.Login(admin)
+func (c AdminUseCase) Login(admin models.LoginData, ctx *gin.Context) responses.Response {
+	id, is_admin := c.adminRepo.Login(admin)
+
+	if !is_admin {
+		return responses.ClientReponse(http.StatusUnauthorized, "match not found , could not login :(", "Unauthorised !", nil)
+	}
+
+	tokenString := middleware.GetTokenString(uint(id), "admin", false)
+
+	ctx.SetCookie("Authorise", tokenString, 3600, "", "", true, false)
+
+	return responses.ClientReponse(http.StatusUnauthorized, "login successfull", nil, "TOKENSTRING : "+tokenString)
 }
 
-func (cr *AdminUseCase) ListAdmins() ([]models.Admin, error) {
-	return cr.adminRepo.ListAdmins()
+func (cr *AdminUseCase) ListAdmins() responses.Response {
+	list, err := cr.adminRepo.ListAdmins()
+	if err != nil {
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't fetch list of admins", err, nil)
+	}
+	return responses.ClientReponse(http.StatusOK, "admin list fetched successfully", nil, list)
 }
 
-func (c AdminUseCase) ListUsers(pageDet models.Pagination) ([]domain.User, int, error) {
+func (c AdminUseCase) ListUsers(pageDet models.Pagination) responses.Response {
 	if pageDet.NewPage == 0 {
 		pageDet.NewPage = 1
 	}
@@ -37,25 +57,48 @@ func (c AdminUseCase) ListUsers(pageDet models.Pagination) ([]domain.User, int, 
 	}
 	pageDet.Offset = pageDet.Size * (pageDet.NewPage - 1)
 	users, numofresults, err := c.userRepo.ListUsers(pageDet)
-	pageDet.Lastpage = numofresults / pageDet.Size
-	if numofresults%pageDet.Size != 0 {
-		pageDet.Lastpage++
+	if err != nil {
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't fetch list of users data", err, nil)
 	}
-	return users, numofresults, err
+	// pageDet.Lastpage = numofresults / pageDet.Size
+	// if numofresults%pageDet.Size != 0 {
+	// 	pageDet.Lastpage++
+	// }
+	return responses.ClientReponse(http.StatusOK, "users data fetched successfully", nil, map[string]any{
+		"currentpage":     pageDet.NewPage,
+		"numberofresults": numofresults,
+		"pagesize":        5,
+		"data":            users,
+	})
 }
 
-func (c *AdminUseCase) FindByID(id uint) (domain.User, error) {
+func (c *AdminUseCase) FindByID(id uint) responses.Response {
 	user, err := c.userRepo.FindByID(id)
-	return user, err
+	if err != nil {
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't fetch user data", err, nil)
+	}
+	return responses.ClientReponse(http.StatusOK, "user data fetched successfully", nil, user)
 }
 
-func (c *AdminUseCase) Delete(user domain.User) error {
+func (c *AdminUseCase) Delete(user domain.User) responses.Response {
 	err := c.userRepo.DeleteUser(user)
-	return err
+	if err != nil {
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't delete user", err, nil)
+	}
+	return responses.ClientReponse(http.StatusOK, "user deleted successfully", nil, nil)
 }
 
-func (c *AdminUseCase) BlockOrUnBlock(id int) bool {
-	status := c.userRepo.BlockOrUnBlock(id)
-	fmt.Println("status in usecase :", status)
-	return status
+func (c *AdminUseCase) BlockOrUnBlock(id int) responses.Response {
+	status, err := c.userRepo.BlockOrUnBlock(id)
+	if err != nil {
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't update user permission", err, nil)
+	}
+
+	return responses.ClientReponse(http.StatusOK, "user permission updated ", nil, map[string]any{
+		"blocked": status,
+	})
 }

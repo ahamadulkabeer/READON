@@ -1,10 +1,12 @@
 package interfaces
 
-import domain "readon/pkg/domain"
+import (
+	"readon/pkg/api/responses"
+)
 
 type CategoryUsecase interface {
-	AddCategory(string) (string, error)
-	UpdateCategory(int, string) (domain.Category, error)
-	DeleteCategory(categoryID int) error
-	ListCategories() ([]domain.Category, error)
+	AddCategory(string) responses.Response
+	UpdateCategory(IDToUpdate uint, newCategory string) responses.Response
+	DeleteCategory(categoryID int) responses.Response
+	ListCategories() responses.Response
 }

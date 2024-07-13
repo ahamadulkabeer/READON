@@ -1,12 +1,23 @@
 package helpers
 
 import (
+	"errors"
 	"fmt"
 
 	uuid "github.com/satori/go.uuid"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
+
+var sendgridApiKey string
+
+func SetSendgridConfig(apiKey string) error {
+	if apiKey == "" {
+		return errors.New("sendgrid key is empty")
+	}
+	sendgridApiKey = apiKey
+	return nil
+}
 
 func GenerateAndSendOpt(email string) (string, error) {
 	otpUUID := uuid.NewV4()
@@ -20,11 +31,11 @@ func GenerateAndSendOpt(email string) (string, error) {
 
 	message := mail.NewSingleEmail(from, subject, to, plainTextContent, htmlContent)
 	//os.Getenv("SENDGRID_API_KEY")
-	client := sendgrid.NewSendClient("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")
+	client := sendgrid.NewSendClient(sendgridApiKey)
 
 	_, err := client.Send(message)
 	if err != nil {
-		return " ", err
+		return "failed to send otp", err
 	}
 	return otp, nil
 

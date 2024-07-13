@@ -3,12 +3,10 @@ package handler
 import (
 	"net/http"
 	"readon/pkg/api/responses"
-	"readon/pkg/models"
 	services "readon/pkg/usecase/interface"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/copier"
 )
 
 type CartHandler struct {
@@ -33,25 +31,18 @@ func NewCartHandler(usecase services.CartUseCase) *CartHandler {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /user/addtocart [post]
 func (cr CartHandler) AddToCart(c *gin.Context) {
-
+	userID := c.GetInt("userId")
 	bookIdStr := c.Query("bookId")
 	bookID, err := strconv.Atoi(bookIdStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, responses.RespondWithError(http.StatusBadRequest,
-			"Error while getting book id", err.Error()))
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
+			"Error while getting book id", err.Error(), nil))
 		return
 	}
 
-	userID := c.GetInt("userId")
+	response := cr.CartUseCase.AddItem(userID, bookID)
 
-	err = cr.CartUseCase.AddItem(userID, bookID)
-	if err != nil {
-
-		c.JSON(http.StatusInternalServerError, responses.RespondWithError(http.StatusInternalServerError,
-			"Error while adding item  to cart ", err.Error()))
-		return
-	}
-	c.JSON(http.StatusOK, responses.RespondWithSuccess(http.StatusOK, "item added to the cart", nil))
+	c.JSON(response.StatusCode, response)
 
 }
 
@@ -68,16 +59,8 @@ func (cr CartHandler) GetCart(c *gin.Context) {
 
 	userID := c.GetInt("userId")
 
-	cart, err := cr.CartUseCase.GetCart(userID)
-	if err != nil {
-		c.JSON(http.StatusNotFound, responses.RespondWithError(http.StatusNotFound,
-			"Error while getting cart ", err.Error()))
-		return
-	}
-	var carts []models.ListCart
-	copier.Copy(&carts, &cart)
-	c.JSON(http.StatusOK, responses.RespondWithSuccess(http.StatusOK,
-		"cart items fetched successfully", carts))
+	response := cr.CartUseCase.GetCart(userID)
+	c.JSON(response.StatusCode, response)
 }
 
 // @Summary Update quantity of a product in the cart
@@ -92,29 +75,25 @@ func (cr CartHandler) GetCart(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /user/updatecart [put]
 func (cr CartHandler) UpdateQuantity(c *gin.Context) {
+	userID := c.GetInt("userId")
 	bookidstr := c.Query("bookId")
 	qtystr := c.Query("quantity")
 	bookID, err := strconv.Atoi(bookidstr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, responses.RespondWithError(http.StatusBadRequest,
-			"Error while getting book id", err.Error()))
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
+			"Error while getting book id", err.Error(), nil))
 		return
 	}
 	qty, err := strconv.Atoi(qtystr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, responses.RespondWithError(http.StatusBadRequest,
-			"Error while getting quantity ", err.Error()))
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
+			"Error while getting quantity ", err.Error(), nil))
 		return
 	}
-	userID := c.GetInt("userId")
 
-	err = cr.CartUseCase.UpdateQty(userID, bookID, qty)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, responses.RespondWithError(http.StatusInternalServerError,
-			"Error while updating item quanity ", err.Error()))
-		return
-	}
-	c.JSON(http.StatusOK, responses.RespondWithSuccess(http.StatusOK, "quantity upadated .", nil))
+	response := cr.CartUseCase.UpdateQty(userID, bookID, qty)
+
+	c.JSON(response.StatusCode, response)
 }
 
 // @Summary Delete a product from the cart
@@ -128,21 +107,16 @@ func (cr CartHandler) UpdateQuantity(c *gin.Context) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /user/deleteitem [delete]
 func (cr CartHandler) DeleteFromCart(c *gin.Context) {
+	userID := c.GetInt("userId")
 	bookIdStr := c.Query("bookId")
 	bookID, err := strconv.Atoi(bookIdStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, responses.RespondWithError(http.StatusBadRequest,
-			"Error while getting book id", err.Error()))
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
+			"Error while getting book id", err.Error(), nil))
 		return
 	}
 
-	userID := c.GetInt("userId")
+	response := cr.CartUseCase.DeleteItem(userID, bookID)
 
-	err = cr.CartUseCase.DeleteItem(userID, bookID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, responses.RespondWithError(http.StatusInternalServerError,
-			"Error while deleting item ", err.Error()))
-		return
-	}
-	c.JSON(http.StatusOK, responses.RespondWithSuccess(http.StatusOK, "item removed from the cart.", nil))
+	c.JSON(response.StatusCode, response)
 }

@@ -100,8 +100,9 @@ func (c CouponUsecase) IssueCoupon(userID, couponID uint) responses.Response {
 func (c CouponUsecase) ListCouponsbyUser(userID uint) responses.Response {
 	list, err := c.CouponRepo.ListCouponsbyUser(userID)
 	if err != nil {
-		responses.ClientReponse(http.StatusInternalServerError,
+		return responses.ClientReponse(http.StatusInternalServerError,
 			fmt.Sprint("couldnt retieve coupons on user id : ", userID), err.Error(), nil)
+
 	}
 	return responses.ClientReponse(http.StatusOK,
 		"coupon successfully retrived ", nil, list)

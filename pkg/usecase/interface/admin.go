@@ -1,15 +1,18 @@
 package interfaces
 
 import (
+	"readon/pkg/api/responses"
 	domain "readon/pkg/domain"
 	"readon/pkg/models"
+
+	"github.com/gin-gonic/gin"
 )
 
 type AdminUseCase interface {
-	Login(models.LoginData) (int, bool)
-	ListAdmins() ([]models.Admin, error)
-	ListUsers(models.Pagination) ([]domain.User, int, error)
-	FindByID(id uint) (domain.User, error)
-	Delete(user domain.User) error
-	BlockOrUnBlock(int) bool
+	Login(admin models.LoginData, context *gin.Context) responses.Response
+	ListAdmins() responses.Response
+	ListUsers(models.Pagination) responses.Response
+	FindByID(id uint) responses.Response
+	Delete(user domain.User) responses.Response
+	BlockOrUnBlock(int) responses.Response
 }

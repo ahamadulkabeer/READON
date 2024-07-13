@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
+	"readon/pkg/api/responses"
 	"readon/pkg/models"
 	services "readon/pkg/usecase/interface"
 	"strconv"
@@ -30,17 +30,9 @@ func NewCategoryHandler(usecase services.CategoryUsecase) *CategoryHandler {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /admin/categorylist [get]
 func (cr CategoryHandler) ListCategories(c *gin.Context) {
-	list, err := cr.CategoryUsecase.ListCategories()
-	if err != nil {
-		errResponse := models.ErrorResponse{
-			Err:    err.Error(),
-			Status: "InternalServerError",
-			Hint:   "please try again",
-		}
-		c.JSON(http.StatusInternalServerError, errResponse)
-		return
-	}
-	c.JSON(http.StatusOK, list)
+	response := cr.CategoryUsecase.ListCategories()
+
+	c.JSON(http.StatusOK, response)
 }
 
 // AddCategory godoc
@@ -58,26 +50,13 @@ func (cr CategoryHandler) AddCategory(c *gin.Context) {
 	var newCategory models.Newcategory
 	err := c.Bind(&newCategory)
 	if err != nil {
-		errResponse := models.ErrorResponse{
-			Err:    err.Error(),
-			Status: "error while binding user input",
-			Hint:   "please try again",
-		}
-		c.JSON(http.StatusBadRequest, errResponse)
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
+			"error binding while category details", err, nil))
 		return
 	}
 
-	addedCategory, err := cr.CategoryUsecase.AddCategory(newCategory.Name)
-	if err != nil {
-		errResponse := models.ErrorResponse{
-			Err:    err.Error(),
-			Status: "couldn't add  category",
-			Hint:   "please try again",
-		}
-		c.JSON(http.StatusInternalServerError, errResponse)
-		return
-	}
-	response := "successfully added new category : " + addedCategory
+	response := cr.CategoryUsecase.AddCategory(newCategory.Name)
+
 	c.JSON(http.StatusOK, response)
 }
 
@@ -96,30 +75,20 @@ func (cr CategoryHandler) AddCategory(c *gin.Context) {
 func (cr CategoryHandler) UpdateCategory(c *gin.Context) {
 	paramsId := c.Param("categoryId")
 	id, err := strconv.Atoi(paramsId)
-	fmt.Println("idd:", id)
 	if err != nil {
-		errResponse := models.ErrorResponse{
-			Err:    err.Error(),
-			Status: "Cannot parse category_id",
-			Hint:   "please try again",
-		}
-		c.JSON(http.StatusBadRequest, errResponse)
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
+			"error binding params", err, nil))
 		return
 	}
 	var newcategory models.Newcategory
-	c.Bind(&newcategory)
-	fmt.Println("newcategory.Name:", newcategory.Name)
-	addedCategory, err := cr.CategoryUsecase.UpdateCategory(id, newcategory.Name)
+	err = c.Bind(&newcategory)
 	if err != nil {
-		errResponse := models.ErrorResponse{
-			Err:    err.Error(),
-			Status: "update filed : " + addedCategory.Name,
-			Hint:   "please try again",
-		}
-		c.JSON(http.StatusInternalServerError, errResponse)
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
+			"error binding while category details", err, nil))
 		return
 	}
-	response := "successfully updated new category : " + addedCategory.Name
+	response := cr.CategoryUsecase.UpdateCategory(uint(id), newcategory.Name)
+
 	c.JSON(http.StatusOK, response)
 }
 
@@ -138,25 +107,12 @@ func (cr CategoryHandler) DeleteCategory(c *gin.Context) {
 	paramsId := c.Param("categoryId")
 	id, err := strconv.Atoi(paramsId)
 	if err != nil {
-		errResponse := models.ErrorResponse{
-			Err:    err.Error(),
-			Status: "Cannot parse category_id",
-			Hint:   "please try again",
-		}
-		c.JSON(http.StatusBadRequest, errResponse)
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
+			"error binding params", err, nil))
 		return
 	}
-	err = cr.CategoryUsecase.DeleteCategory(id)
-	if err != nil {
-		errResponse := models.ErrorResponse{
-			Err:    err.Error(),
-			Status: "Delete filed , id : " + paramsId,
-			Hint:   "please try again",
-		}
-		c.JSON(http.StatusInternalServerError, errResponse)
-		return
-	}
-	response := "successfully deleted the category  , id :" + paramsId
+	response := cr.CategoryUsecase.DeleteCategory(id)
+
 	c.JSON(http.StatusOK, response)
 
 }

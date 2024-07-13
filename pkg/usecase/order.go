@@ -3,6 +3,8 @@ package usecase
 import (
 	"errors"
 	"fmt"
+	"log"
+	"readon/pkg/api/helpers"
 	"readon/pkg/domain"
 	"readon/pkg/models"
 	interfaces "readon/pkg/repository/interface"
@@ -31,65 +33,38 @@ func NewOrderUseCase(orepo interfaces.OrderRepository, crepo interfaces.CartRepo
 	}
 }
 
-func (c OrderUseCase) CreateOrder(userID, addressID, PaymentMethodID int, coupons []string) (string, error) {
+func (c OrderUseCase) CreateOrder(userID, addressID, PaymentMethodID int, couponCodes []string) (string, error) {
 
 	cart, err := c.CartRepo.GetItems(userID)
 	if err != nil {
 		fmt.Println("err : ", err)
 		return "", err
 	}
+
 	if len(cart) == 0 {
 		return "", errors.New("cart is empty")
 	}
 
 	totalQTY := 0
 	totalPrice := 0.00
-	discount := 0.00
 
 	for _, items := range cart {
 		totalQTY += items.Quantity
 		totalPrice += items.Price * float64(items.Quantity)
 	}
-	//to do coupon ???
-	//var discountedPrice float64
-
-	for _, coupon := range coupons {
-		fmt.Println("coupn :", coupon)
-		found, userCoupon, err := c.CouponRepo.UserHasCoupon(uint(userID), coupon)
-		if err != nil {
-			fmt.Println("db err : ", err)
-			return "", err
-		}
-		if !found {
-			fmt.Println("coupon :", coupon, "not found")
-			return "", err
-		}
-		coup, err := c.CouponRepo.GetCouponByID(userCoupon.CouponID)
-		if err != nil {
-			fmt.Println("err when getting coupon :", err)
-		}
-		userCoupon.Coupon = coup
-
-		if userCoupon.Coupon.DiscountType == "percentage" {
-			discount += (totalPrice / 100) * float64(userCoupon.Coupon.DiscountAmount)
-		} else {
-			discount += float64(userCoupon.Coupon.DiscountAmount)
-		}
-	}
-
-	discountedPrice := totalPrice - discount
-
 	order := domain.Order{
 		UserID:          uint(userID),
 		AdressID:        uint(addressID),
 		PaymentMethodID: uint(PaymentMethodID),
 		TotalQuantity:   totalQTY,
 		TotalPrice:      totalPrice,
-		DiscountedPrice: discountedPrice,
-		TotalDiscount:   discount,
 		DeleveryCharge:  49.00, // fixed (for now)
 		Status:          "processing",
 	}
+
+	helpers.CalculateCouponDiscount(c.CouponRepo, couponCodes, &cart, &order)
+
+	fmt.Println("order :", order)
 
 	if PaymentMethodID == 1 {
 		order.PaymentStatus = "not paid"
@@ -106,12 +81,14 @@ func (c OrderUseCase) CreateOrder(userID, addressID, PaymentMethodID int, coupon
 		order.PaymentStatus = "payment pending"
 		order.RazorPayOrderID = razorOrderId
 	}
+
 	// creates order and clears cart
+
 	err = c.OrderRepo.CreateOrder(&order, cart)
 	if err != nil {
 		return "", errors.New("couldnt create order : db error")
 	}
-	for _, coupon := range coupons {
+	for _, coupon := range couponCodes {
 		fmt.Println("coupn :", coupon)
 		c.CouponRepo.MarkCouponAsRedemed(coupon, order.ID)
 	}
@@ -136,11 +113,16 @@ func (c OrderUseCase) RetryOrder(userID, orderID int) (string, error) {
 	return RazorOrderID, nil
 }
 
-func (c OrderUseCase) CancelOrder(userid, orderId int) error {
+func (c OrderUseCase) CancelOrder(userid, orderID int) error {
 	// to do : add the paid amount to the wallet
-	err := c.OrderRepo.CancelOrder(orderId, userid)
+	err := c.OrderRepo.CancelOrder(orderID, userid)
 	if err != nil {
 		return err
+	}
+
+	err = c.CouponRepo.MarkCouponAsNotRedeemed(uint(orderID))
+	if err != nil {
+		log.Println("order cancelled , failed to refresh used coupons !")
 	}
 	return nil
 }
@@ -186,7 +168,7 @@ func (c OrderUseCase) ListOrders(userID int, pageDetails models.Pagination) ([]m
 			})
 		}
 
-		address, err := c.AddressRepo.GetAdress(listOfOrders[ind].AdressID)
+		address, err := c.AddressRepo.GetAddress(listOfOrders[ind].AdressID, listOfOrders[ind].UserID)
 		if err != nil {
 			return orderListing, err
 		}
@@ -229,7 +211,7 @@ func (c OrderUseCase) GetOrder(userID, orderID int) (models.OrdersListing, error
 			Total:    orderItems[i].Price * float64(orderItems[i].Quantity),
 		})
 	}
-	address, err := c.AddressRepo.GetAdress(order.AdressID)
+	address, err := c.AddressRepo.GetAddress(order.AdressID, order.UserID)
 	if err != nil {
 		return orderListing, err
 	}
@@ -256,9 +238,20 @@ func (c OrderUseCase) GetAllOrders(filter int) ([]domain.Order, error) {
 	return list, nil
 }
 
+var razorpayKey, razorpaySecret string
+
+func LoadRazorpayConfig(key, secret string) error {
+	if key == "" || secret == "" {
+		return errors.New("the config data is empty")
+	}
+	razorpayKey = key
+	razorpaySecret = secret
+	return nil
+}
+
 func MakeRazorpayPayment(Price float64) (string, error) {
-	// to do : should get this keys from .env ...
-	client := razorpay.NewClient("rzp_test_5aKn1qdbpivTnp", "VDupVmjWyAJY1jBY8m3Ewc45")
+
+	client := razorpay.NewClient(razorpayKey, razorpaySecret)
 	amountInPaise := Price * 100
 	orderData := map[string]interface{}{
 		"amount":          amountInPaise,
@@ -326,7 +319,7 @@ func (c OrderUseCase) GetInvoiveData(userID, orderID int) (models.InvoiceData, e
 		})
 	}
 	invoice.OrderItems = orderItemsListing
-	invoice.Address, err = c.AddressRepo.GetAdress(1)
+	invoice.Address, err = c.AddressRepo.GetAddress(1, 1)
 	if err != nil {
 		return invoice, err
 	}

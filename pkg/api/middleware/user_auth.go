@@ -35,6 +35,7 @@ func UserAuthorizationMiddleware(c *gin.Context) {
 		c.Abort()
 		return
 	}
+
 	if role != "user" {
 		c.JSON(http.StatusForbidden, responses.RespondWithError(http.StatusForbidden, "not authorised for this action", "UnAuthorised"))
 		c.Abort()

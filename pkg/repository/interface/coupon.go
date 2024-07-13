@@ -16,4 +16,5 @@ type CouponRepository interface {
 	UserHasCoupon(userID uint, couponCode string) (bool, domain.UserCoupon, error)
 	MarkCouponAsRedemed(couponCode string, orderID uint) error
 	DeleteCouponUser(couponCode string) error
+	MarkCouponAsNotRedeemed(orderID uint) error
 }

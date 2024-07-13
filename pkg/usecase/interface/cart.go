@@ -1,10 +1,12 @@
 package interfaces
 
-import "readon/pkg/domain"
+import (
+	"readon/pkg/api/responses"
+)
 
 type CartUseCase interface {
-	AddItem(userID, bookID int) error
-	UpdateQty(userID, bookID, qty int) error
-	DeleteItem(userID, bookID int) error
-	GetCart(userID int) ([]domain.Cart, error)
+	AddItem(userID, bookID int) responses.Response
+	UpdateQty(userID, bookID, qty int) responses.Response
+	DeleteItem(userID, bookID int) responses.Response
+	GetCart(userID int) responses.Response
 }

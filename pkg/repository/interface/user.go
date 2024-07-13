@@ -12,7 +12,7 @@ type UserRepository interface {
 	FindByEmail(email string) (domain.User, error)
 	FindByID(id uint) (domain.User, error)
 	DeleteUser(user domain.User) error
-	BlockOrUnBlock(int) bool
+	BlockOrUnBlock(int) (bool, error)
 
 	//Authorise(user models.Userlogindata) (int, bool, error)
 	CheckForEmail(email string) (bool, error)

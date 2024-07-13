@@ -4,12 +4,10 @@ import (
 	"net/http"
 	"readon/pkg/api/responses"
 	"readon/pkg/domain"
-	"readon/pkg/models"
 	services "readon/pkg/usecase/interface"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/copier"
 )
 
 type AddressHandler struct {
@@ -36,22 +34,17 @@ func (cr AddressHandler) AddAddress(c *gin.Context) {
 	var address domain.Address
 	err := c.Bind(&address)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, responses.RespondWithError(http.StatusBadRequest,
-			"Error while binding parameters , pls check the input ", err.Error()))
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
+			"Error while binding parameters , pls check the input ", err.Error(), nil))
 		return
 	}
 
 	userID := c.GetInt("userId")
-
 	address.UserID = uint(userID)
-	err = cr.AddressUseCase.AddAddress(address)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, responses.RespondWithError(500,
-			"Error while creating resource : couldn't add address", err))
-		return
-	}
 
-	c.JSON(http.StatusCreated, responses.RespondWithSuccess(http.StatusCreated, "address added successfully", nil))
+	response := cr.AddressUseCase.AddAddress(address)
+
+	c.JSON(response.StatusCode, response)
 
 }
 
@@ -69,15 +62,15 @@ func (cr AddressHandler) UpdateAddress(c *gin.Context) {
 	var address domain.Address
 	err := c.Bind(&address)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, responses.RespondWithError(http.StatusBadRequest,
-			"Error while binding parameters , pls check the input ", err.Error()))
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
+			"Error while binding parameters , pls check the input ", err.Error(), nil))
 		return
 	}
 	addressIdStr := c.Param("addressId")
 	addressID, err := strconv.Atoi(addressIdStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, responses.RespondWithError(http.StatusBadRequest,
-			"param : addressId not found", err.Error()))
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
+			"param : addressId not found", err.Error(), nil))
 		return
 	}
 
@@ -85,15 +78,8 @@ func (cr AddressHandler) UpdateAddress(c *gin.Context) {
 
 	address.UserID = uint(userID)
 	address.ID = uint(addressID)
-	err = cr.AddressUseCase.EditAddress(address)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, responses.RespondWithError(http.StatusInternalServerError,
-			"Error while updating  address : couldn't update address", err.Error()))
-		return
-	}
-
-	c.JSON(http.StatusOK, responses.RespondWithSuccess(http.StatusOK, "address updated successfully", nil))
-
+	response := cr.AddressUseCase.EditAddress(address)
+	c.JSON(response.StatusCode, response)
 }
 
 // @Summary Delete address
@@ -109,19 +95,14 @@ func (cr AddressHandler) DeleteAddress(c *gin.Context) {
 	addressIdStr := c.Param("addressId")
 	addressID, err := strconv.Atoi(addressIdStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, responses.RespondWithError(http.StatusBadRequest,
-			"param : addressId not found", err.Error()))
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
+			"param : addressId not found", err.Error(), nil))
 		return
 	}
 	userID := c.GetInt("userId")
 
-	err = cr.AddressUseCase.DeleteAddress(uint(addressID), uint(userID))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, responses.RespondWithError(http.StatusInternalServerError,
-			"Error while deleting  address : couldn't delete address", err.Error()))
-		return
-	}
-	c.JSON(http.StatusOK, responses.RespondWithSuccess(http.StatusNoContent, "address Deleted successfully", nil))
+	response := cr.AddressUseCase.DeleteAddress(uint(addressID), uint(userID))
+	c.JSON(response.StatusCode, response)
 }
 
 // @Summary Get address
@@ -137,20 +118,14 @@ func (cr AddressHandler) GetAddress(c *gin.Context) {
 	addressIdStr := c.Param("addressId")
 	addressID, err := strconv.Atoi(addressIdStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, responses.RespondWithError(http.StatusBadRequest,
-			"param : addressId not found", err.Error()))
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
+			"param : addressId not found", err.Error(), nil))
 		return
 	}
 	userID := c.GetInt("userId")
-	address, err := cr.AddressUseCase.GetAddress(uint(addressID), uint(userID))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, responses.RespondWithError(http.StatusInternalServerError,
-			"Error while retriving  address ", err.Error()))
-		return
-	}
-	var addressl models.ListAddress
-	copier.Copy(&addressl, &address)
-	c.JSON(http.StatusOK, responses.RespondWithSuccess(http.StatusOK, "address retrived successfully", addressl))
+	response := cr.AddressUseCase.GetAddress(uint(addressID), uint(userID))
+
+	c.JSON(response.StatusCode, response)
 }
 
 // @Summary List addresses
@@ -166,13 +141,7 @@ func (cr AddressHandler) ListAddress(c *gin.Context) {
 
 	userID := c.GetInt("userId")
 
-	addressess, err := cr.AddressUseCase.ListAddress(uint(userID))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, responses.RespondWithError(http.StatusInternalServerError,
-			"Error while retriving  addressess ", err.Error()))
-		return
-	}
-	var addressl []models.ListAddress
-	copier.Copy(&addressl, &addressess)
-	c.JSON(http.StatusOK, responses.RespondWithSuccess(http.StatusOK, "address retrived successfully", addressl))
+	response := cr.AddressUseCase.ListAddress(uint(userID))
+
+	c.JSON(response.StatusCode, response)
 }

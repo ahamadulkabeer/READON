@@ -40,13 +40,16 @@ type ProductUpdate struct {
 }
 
 type Coupon struct {
-	Name           string `form:"name"`
-	Description    string `form:"description"`
-	CouponPrefix   string `form:"prefix"`
-	ValidFrom      string `form:"validfrom"`
-	ValidTill      string `form:"validtill"`
-	MaxQuantity    int    `form:"quantity"`
-	DiscountType   string `form:"type"`
-	DiscountAmount int    `form:"amount"`
-	IsBound        bool   `form:"isbound"`
+	Name               string `form:"name"`
+	Description        string `form:"description"`
+	CouponPrefix       string `form:"prefix"`
+	ValidFrom          string `form:"validfrom"`
+	ValidTill          string `form:"validtill"`
+	MaxQuantity        int    `form:"quantity"`
+	DiscountType       string `form:"type"`
+	DiscountAmount     int    `form:"amount"`
+	ApplicableOn       string `form:"applicableon"`
+	ApplicableCategory string `form:"applicablecategory"`
+	ApplicableProduct  string `form:"applicableproduct"`
+	IsBound            bool   `form:"isbound"`
 }

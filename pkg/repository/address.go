@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"fmt"
 	domain "readon/pkg/domain"
 	interfaces "readon/pkg/repository/interface"
 
@@ -18,49 +17,51 @@ func NewAddressRepository(db *gorm.DB) interfaces.AddressRepository {
 	}
 }
 
-func (c AddressDatabase) CreateNewAdress(address domain.Address) error {
-	result := c.DB.Create(&address)
-	return result.Error
+func (c AddressDatabase) CreateNewAddress(address *domain.Address) error {
+	err := c.DB.Create(address).Error
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (c AddressDatabase) UpdateAddress(newAddress domain.Address) error {
-	result := c.DB.Save(&newAddress)
-	return result.Error
+func (c AddressDatabase) UpdateAddress(newAddress *domain.Address) error {
+	err := c.DB.Save(newAddress).Error
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (c AddressDatabase) ListAdresses(userID uint) ([]domain.Address, error) {
+func (c AddressDatabase) ListAddresses(userID uint) ([]domain.Address, error) {
 	var list []domain.Address
 	err := c.DB.Model(&domain.Address{}).Where("user_id = ?", userID).Find(&list).Error
 	if err != nil {
-		fmt.Println("err : ", err)
+		return []domain.Address{}, err
 	}
-	fmt.Println("lsit", list)
 	return list, err
 }
 
-func (c AddressDatabase) GetAdress(addressID uint) (domain.Address, error) {
+func (c AddressDatabase) GetAddress(addressID, userID uint) (domain.Address, error) {
 	var Address domain.Address
-	err := c.DB.Model(&domain.Address{}).Where("id = ?", addressID).First(&Address).Error
+	err := c.DB.Model(&domain.Address{}).Where("id = ? AND user_id", addressID, userID).First(&Address).Error
 	if err != nil {
-		fmt.Println("err : ", err)
+		return domain.Address{}, err
 	}
-	fmt.Println("add", Address)
 	return Address, err
 }
+
 func (c AddressDatabase) DeleteAddress(addressID, userID uint) error {
 	err := c.DB.Where("id = ? AND user_id = ?", addressID, userID).Delete(&domain.Address{}).Error
 	if err != nil {
-		fmt.Println("err : ", err)
+		return err
 	}
-	return err
+	return nil
 }
 
 func (c AddressDatabase) AddressBelongsToUser(userID, addressID uint) (bool, error) {
 	var count int64
 	err := c.DB.Model(&domain.Address{}).Where("user_id = ? AND id = ?", userID, addressID).Count(&count).Error
-	if err != nil {
-		fmt.Println("err : ", err)
-	}
 	if err != nil {
 		return false, err
 	}

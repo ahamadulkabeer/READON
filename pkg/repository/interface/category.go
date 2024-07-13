@@ -4,9 +4,9 @@ import "readon/pkg/domain"
 
 type CategoryRepository interface {
 	AddCategory(string) (domain.Category, error)
-	CheckCategory(currrent string) error
-	GetCategoryById(idtoch int) error
-	UpdateCategory(int, string) (domain.Category, error)
+	CheckCategory(current string) (bool, error)
+	GetCategoryById(categoryID int) (bool, error)
+	UpdateCategory(IDToChange uint, newCategory string) error
 	DeleteCategory(categoryID int) error
 	ListCategories(limit int) ([]domain.Category, error)
 }

@@ -7,9 +7,10 @@
 package di
 
 import (
+	"readon/config"
 	"readon/pkg/api"
 	"readon/pkg/api/handler"
-	"readon/config"
+	"readon/pkg/api/helpers"
 	"readon/pkg/db"
 	"readon/pkg/repository"
 	"readon/pkg/usecase"
@@ -25,6 +26,14 @@ func InitializeAPI(cfg config.Config) (*http.ServerHTTP, error) {
 	
 	userRepository := repository.NewUserRepository(gormDB)
 	productRepository := repository.NewProductRepository(gormDB)
+	adminRepository := repository.NewAdminRepository(gormDB)
+	categoryRepository := repository.NewCategoryRepository(gormDB)
+	cartRepository := repository.NewCartRepository(gormDB)
+	addressRepository := repository.NewAddressRepository(gormDB)
+	couponRepository := repository.NewCouponRepository(gormDB)
+	orderRepository := repository.NewOrdersRepository(gormDB)
+
+
 	userUseCase := usecase.NewUserUseCase(userRepository)
 	userHandler := handler.NewUserHandler(userUseCase)
 
@@ -32,36 +41,49 @@ func InitializeAPI(cfg config.Config) (*http.ServerHTTP, error) {
 	productUseCase := usecase.NewProductUseCase(productRepository)
 	productHandler := handler.NewProductHandler(productUseCase)
 
-	adminRepository := repository.NewAdminRepository(gormDB)
+	
 	adminUsecase := usecase.NewAdminUsecase(adminRepository,userRepository)
 	adminHandler := handler.NewAdminHandler(adminUsecase)
 
-	categoryRepository := repository.NewCategoryRepository(gormDB)
+	
 	categoryUsecase := usecase.NewCategoryUseCase(categoryRepository)
 	categoryHandler := handler.NewCategoryHandler(categoryUsecase)
 
-    cartRepository := repository.NewCartRepository(gormDB)
+    
     cartUseCase := usecase.NewCartUseCase(cartRepository,productRepository)
     cartHandler := handler.NewCartHandler(cartUseCase)
 
-	addressRepository := repository.NewAddressRepository(gormDB)
+	
 	addressUseCase := usecase.NewAddressUsecase(addressRepository)
 	addressHandler := handler.NewAddressHandler(addressUseCase)
 
-	couponRepository := repository.NewCouponRepository(gormDB)
+	
 	couponUseCase := usecase.NewCouponUseCase(couponRepository)
 	couponHandler := handler.NewCouponHandler(couponUseCase)
 
-	orderRepository := repository.NewOrdersRepository(gormDB)
+	
 	orderUsecase := usecase.NewOrderUseCase(orderRepository,cartRepository,addressRepository,productRepository,couponRepository)
 	orderHandler := handler.NewOrderHandler(orderUsecase)
 
 	
+	// api key initilization
 
+	err = loadApikeys(cfg)
+	if err != nil {
+		return nil,err
+	}
 	
-
-
 	serverHTTP := http.NewServerHTTP(userHandler,productHandler,adminHandler,categoryHandler,cartHandler,orderHandler,addressHandler,couponHandler)
 
 	return serverHTTP, nil
+}
+
+func loadApikeys(cfg config.Config)error{
+	if err := usecase.LoadRazorpayConfig(cfg.RazorpayKey,cfg.RazorpaySecret); err != nil {
+		return err
+	}
+	if err :=  helpers.SetSendgridConfig(cfg.SendgridApiKey); err != nil {
+		return err
+	}
+	return nil
 }

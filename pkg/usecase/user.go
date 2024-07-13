@@ -152,7 +152,7 @@ func (c userUseCase) DeleteUserAccount(id int) error {
 func (c userUseCase) VerifyAndSendOtp(email string) error {
 	_, err := c.userRepo.CheckForEmail(email)
 	if err != nil {
-		return errors.New("Invalid email")
+		return errors.New("invalid email")
 	}
 	otp, err := helpers.GenerateAndSendOpt(email)
 	fmt.Println("otp   : ", otp)

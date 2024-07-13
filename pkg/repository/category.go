@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"fmt"
 	domain "readon/pkg/domain"
 	interfaces "readon/pkg/repository/interface"
 
@@ -21,34 +20,44 @@ func NewCategoryRepository(DB *gorm.DB) interfaces.CategoryRepository {
 func (c categoryDatabase) AddCategory(newcategory string) (domain.Category, error) {
 	newCategory := &domain.Category{Name: newcategory}
 	err := c.DB.Create(newCategory).Error
-
-	return *newCategory, err
-
-}
-
-func (c categoryDatabase) CheckCategory(category string) error {
-	existingCategory := &domain.Category{Name: category}
-	err := c.DB.Where("name = ?", category).First(&existingCategory).Error
-	return err
-}
-
-func (c categoryDatabase) GetCategoryById(idtoch int) error {
-	var Category domain.Category
-	err := c.DB.Where("id = ?", idtoch).First(&Category).Error
-	return err
-}
-
-func (c categoryDatabase) UpdateCategory(idtoch int, newctg string) (domain.Category, error) {
-	existingCategory := domain.Category{}
-	err := c.DB.First(&existingCategory, idtoch).Error
 	if err != nil {
-		return existingCategory, err
+		return *newCategory, err
 	}
+	return *newCategory, nil
 
-	existingCategory.Name = newctg
-	err = c.DB.Save(&existingCategory).Error
+}
 
-	return existingCategory, err
+func (c categoryDatabase) CheckCategory(category string) (bool, error) {
+	existingCategory := &domain.Category{Name: category}
+	result := c.DB.Where("name = ?", category).First(&existingCategory)
+	if result.Error != nil {
+		return false, result.Error
+	}
+	if result.RowsAffected != 0 {
+		return false, nil
+	}
+	return true, nil
+}
+
+func (c categoryDatabase) GetCategoryById(categoryID int) (bool, error) {
+	var Category domain.Category
+	result := c.DB.Where("id = ?", categoryID).First(&Category)
+	if result.Error != nil {
+		return false, result.Error
+	}
+	if result.RowsAffected != 0 {
+		return false, nil
+	}
+	return true, nil
+}
+
+func (c categoryDatabase) UpdateCategory(IDToChange uint, newCategory string) error {
+
+	err := c.DB.Model(domain.Category{}).Where("id = ?", IDToChange).Set("name", newCategory).Error
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c categoryDatabase) DeleteCategory(categoryID int) error {
@@ -68,6 +77,8 @@ func (c categoryDatabase) DeleteCategory(categoryID int) error {
 func (c categoryDatabase) ListCategories(limit int) ([]domain.Category, error) {
 	var categories []domain.Category
 	err := c.DB.Limit(limit).Find(&categories).Error
-	fmt.Println("cat :", categories)
-	return categories, err
+	if err != nil {
+		return categories, err
+	}
+	return categories, nil
 }

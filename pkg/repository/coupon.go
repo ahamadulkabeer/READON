@@ -89,8 +89,8 @@ func (c CouponDatabase) ListCouponsbyUser(userID uint) ([]domain.UserCoupon, err
 
 func (c CouponDatabase) UserHasCoupon(userID uint, couponCode string) (bool, domain.UserCoupon, error) {
 	var userCoupon domain.UserCoupon
-	err := c.DB.Model(&domain.UserCoupon{}).Where("user_id = ? AND coupon_code = ?", userID, couponCode). //Preload("Coupons").
-														Find(&userCoupon).Error
+	err := c.DB.Where("user_id = ? AND coupon_code = ?", userID, couponCode). //Preload("Coupon").
+											Find(&userCoupon).Error
 	if err != nil {
 		return false, domain.UserCoupon{}, err
 	}
@@ -98,7 +98,8 @@ func (c CouponDatabase) UserHasCoupon(userID uint, couponCode string) (bool, dom
 }
 
 func (c CouponDatabase) MarkCouponAsRedemed(couponCode string, orderID uint) error {
-	err := c.DB.Model(&domain.UserCoupon{}).Where("coupon_code = ?", couponCode).Updates(map[string]interface{}{"redeemed": true, "redeemed_on": orderID}).Error
+	err := c.DB.Model(&domain.UserCoupon{}).Where("coupon_code = ?", couponCode).
+		Updates(map[string]interface{}{"redeemed": true, "redeemed_on": orderID}).Error
 	if err != nil {
 		fmt.Println("db err :", err)
 		return err
@@ -111,6 +112,17 @@ func (c CouponDatabase) DeleteCouponUser(couponCode string) error {
 
 	if err != nil {
 		fmt.Println("db err :", err)
+		return err
+	}
+	return nil
+}
+
+func (c CouponDatabase) MarkCouponAsNotRedeemed(orderID uint) error {
+	err := c.DB.Model(&domain.UserCoupon{}).Where("redeemed_on = ?", orderID).
+		Updates(map[string]interface{}{"redeemed": false, "redeemed_on": nil}).Error
+
+	if err != nil {
+		log.Println("db err : ", err)
 		return err
 	}
 	return nil
