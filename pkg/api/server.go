@@ -33,7 +33,7 @@ func NewServerHTTP(userHandler *handler.UserHandler,
 	//engine.LoadHTMLGlob("pkg/templates/*.html") // parse template
 	templatePath := os.Getenv("CONFIG_PATH")
 	if templatePath == "" {
-		templatePath = "/home/kabeer/Projects/READON/pkg/templates/*.html"
+		templatePath = "./pkg/templates/*.html"
 	}
 	engine.LoadHTMLGlob(templatePath)
 	engine.GET("/", func(ctx *gin.Context) {
