@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/spf13/viper"
@@ -25,15 +26,12 @@ var envs = []string{
 func LoadConfig() (Config, error) {
 	var config Config
 
-	// if runningAsSystemdService() {
-	// 	viper.SetConfigFile("/home/kabeer/Projects/READON/.env") // Adjust path as needed
-	// 	fmt.Println("sytem running >>>>>>>>>>>>")
-	// } else {
-	// 	viper.AddConfigPath("./")
-	// 	viper.SetConfigFile(".env")
-	// 	fmt.Println("vc code  running >>>>>>>>>>>>")
-	// }
-	viper.SetConfigFile("/home/kabeer/Projects/READON/.env")
+	configPath := os.Getenv("CONFIG_PATH")
+	if configPath == "" {
+		configPath = "./.env"
+	}
+
+	viper.SetConfigFile(configPath)
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {
@@ -57,9 +55,3 @@ func LoadConfig() (Config, error) {
 
 	return config, nil
 }
-
-// func runningAsSystemdService() bool {
-// 	// Check if the environment variable SYSTEMD_UNIT is set
-// 	_, exists := os.LookupEnv("SYSTEMD_UNIT")
-// 	return exists
-// }
