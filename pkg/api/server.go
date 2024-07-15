@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -30,7 +31,11 @@ func NewServerHTTP(userHandler *handler.UserHandler,
 	engine.Use(cors.Default())
 	engine.Use(gin.Logger()) // Use logger from Gin
 	//engine.LoadHTMLGlob("pkg/templates/*.html") // parse template
-	engine.LoadHTMLGlob("/home/kabeer/Projects/READON/pkg/templates/*.html")
+	templatePath := os.Getenv("CONFIG_PATH")
+	if templatePath == "" {
+		templatePath = "/home/kabeer/Projects/READON/pkg/templates/*.html"
+	}
+	engine.LoadHTMLGlob(templatePath)
 	engine.GET("/", func(ctx *gin.Context) {
 		if ctx.GetHeader("Accept") == "application/json" {
 			ctx.JSON(http.StatusOK, gin.H{
