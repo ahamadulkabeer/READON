@@ -44,7 +44,7 @@ func (c AddressDatabase) ListAddresses(userID uint) ([]domain.Address, error) {
 
 func (c AddressDatabase) GetAddress(addressID, userID uint) (domain.Address, error) {
 	var Address domain.Address
-	err := c.DB.Model(&domain.Address{}).Where("id = ? AND user_id", addressID, userID).First(&Address).Error
+	err := c.DB.Model(&domain.Address{}).Where("id = ? AND user_id = ?", addressID, userID).First(&Address).Error
 	if err != nil {
 		return domain.Address{}, err
 	}

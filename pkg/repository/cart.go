@@ -18,7 +18,7 @@ func NewCartRepository(DB *gorm.DB) interfaces.CartRepository {
 }
 
 func (c CartDatabase) AddItem(item domain.Cart) error {
-	err := c.DB.Model(&domain.Cart{}).Save(&item).Error
+	err := c.DB.Model(&domain.Cart{}).Create(&item).Error
 	return err
 }
 
