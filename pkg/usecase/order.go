@@ -3,8 +3,10 @@ package usecase
 import (
 	"errors"
 	"fmt"
-	"log"
+	"net/http"
+	"readon/pkg/api/errorhandler"
 	"readon/pkg/api/helpers"
+	"readon/pkg/api/responses"
 	"readon/pkg/domain"
 	"readon/pkg/models"
 	interfaces "readon/pkg/repository/interface"
@@ -23,7 +25,11 @@ type OrderUseCase struct {
 	CouponRepo  interfaces.CouponRepository
 }
 
-func NewOrderUseCase(orepo interfaces.OrderRepository, crepo interfaces.CartRepository, arepo interfaces.AddressRepository, prepo interfaces.ProductRepository, coupRepo interfaces.CouponRepository) services.OrderUseCase {
+func NewOrderUseCase(orepo interfaces.OrderRepository,
+	crepo interfaces.CartRepository,
+	arepo interfaces.AddressRepository,
+	prepo interfaces.ProductRepository,
+	coupRepo interfaces.CouponRepository) services.OrderUseCase {
 	return &OrderUseCase{
 		OrderRepo:   orepo,
 		CartRepo:    crepo,
@@ -33,16 +39,16 @@ func NewOrderUseCase(orepo interfaces.OrderRepository, crepo interfaces.CartRepo
 	}
 }
 
-func (c OrderUseCase) CreateOrder(userID, addressID, PaymentMethodID int, couponCodes []string) (string, error) {
+func (c OrderUseCase) CreateOrder(userID, addressID, PaymentMethodID int, couponCodes []string) responses.Response {
 
 	cart, err := c.CartRepo.GetItems(userID)
 	if err != nil {
-		fmt.Println("err : ", err)
-		return "", err
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couln't place order", err.Error(), nil)
 	}
 
 	if len(cart) == 0 {
-		return "", errors.New("cart is empty")
+		return responses.ClientReponse(http.StatusNotFound, "couln't place order", "cart is empty", nil)
 	}
 
 	totalQTY := 0
@@ -52,12 +58,14 @@ func (c OrderUseCase) CreateOrder(userID, addressID, PaymentMethodID int, coupon
 		totalQTY += items.Quantity
 		totalPrice += items.Price * float64(items.Quantity)
 	}
+
 	order := domain.Order{
 		UserID:          uint(userID),
 		AdressID:        uint(addressID),
 		PaymentMethodID: uint(PaymentMethodID),
 		TotalQuantity:   totalQTY,
 		TotalPrice:      totalPrice,
+		PaymentStatus:   "not paid",
 		DeleveryCharge:  49.00, // fixed (for now)
 		Status:          "processing",
 	}
@@ -66,68 +74,75 @@ func (c OrderUseCase) CreateOrder(userID, addressID, PaymentMethodID int, coupon
 
 	fmt.Println("order :", order)
 
-	if PaymentMethodID == 1 {
-		order.PaymentStatus = "not paid"
-	}
-	var razorOrderId string
+	var razorOrderID string
 	if PaymentMethodID == 2 {
 		if totalPrice > 1000 {
-			return "", errors.New("OrderExceedsLimit: Order amount exceeds the maximum allowed limit of 1000")
+			return responses.ClientReponse(http.StatusUnprocessableEntity, "couln't place order",
+				errors.New("OrderExceedsLimit: Order amount exceeds the maximum allowed limit of 1000"), nil)
 		}
-		razorOrderId, err = MakeRazorpayPayment(order.TotalPrice)
+		razorOrderID, err = MakeRazorpayPayment(order.TotalPrice)
 		if err != nil {
-			return "", err
+			return responses.ClientReponse(http.StatusInternalServerError, "couln't place order", errors.New("payment gatway error").Error(), nil)
 		}
 		order.PaymentStatus = "payment pending"
-		order.RazorPayOrderID = razorOrderId
+		order.RazorPayOrderID = razorOrderID
 	}
 
 	// creates order and clears cart
 
 	err = c.OrderRepo.CreateOrder(&order, cart)
 	if err != nil {
-		return "", errors.New("couldnt create order : db error")
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couln't place order", err.Error(), nil)
 	}
 	for _, coupon := range couponCodes {
 		fmt.Println("coupn :", coupon)
 		c.CouponRepo.MarkCouponAsRedemed(coupon, order.ID)
 	}
-	return razorOrderId, nil
+	res := c.MakeOrderResponse(order)
+	return responses.ClientReponse(http.StatusOK, "order placed , "+"razorpay order id : "+razorOrderID, nil, res.Data)
 
 }
 
-func (c OrderUseCase) RetryOrder(userID, orderID int) (string, error) {
+func (c OrderUseCase) RetryOrder(userID, orderID int) responses.Response {
 	paymentStatus, err := c.OrderRepo.CheckPymentStatus(orderID)
+
 	if err != nil {
-		return "", err
-	}
-	fmt.Println("payment staus :", paymentStatus)
-	if paymentStatus != "failed" {
-		return "", errors.New("not a failed payment")
-	}
-	RazorOrderID, err := c.OrderRepo.FetchRazorOrderID(orderID)
-	if err != nil {
-		return "", err
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't retry order", err.Error(), nil)
 	}
 
-	return RazorOrderID, nil
+	if paymentStatus != "failed" {
+		return responses.ClientReponse(http.StatusBadRequest, "couldn't retry order", "not a failed payment", nil)
+	}
+
+	razorOrderID, err := c.OrderRepo.FetchRazorOrderID(orderID)
+	if err != nil {
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't retry order", err.Error(), nil)
+	}
+
+	return responses.ClientReponse(http.StatusOK, "order placed",
+		nil, "razorpay order id : "+razorOrderID)
 }
 
-func (c OrderUseCase) CancelOrder(userid, orderID int) error {
+func (c OrderUseCase) CancelOrder(userid, orderID int) responses.Response {
 	// to do : add the paid amount to the wallet
 	err := c.OrderRepo.CancelOrder(orderID, userid)
 	if err != nil {
-		return err
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "coulnd't cancel order", err.Error(), nil)
 	}
 
 	err = c.CouponRepo.MarkCouponAsNotRedeemed(uint(orderID))
 	if err != nil {
-		log.Println("order cancelled , failed to refresh used coupons !")
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "order cancelled , failed to refresh used coupons !", err.Error(), nil)
 	}
-	return nil
+	return responses.ClientReponse(http.StatusOK, "order cancelled", nil, nil)
 }
 
-func (c OrderUseCase) ListOrders(userID int, pageDetails models.Pagination) ([]models.OrdersListing, error) {
+func (c OrderUseCase) ListOrders(userID int, pageDetails models.Pagination) responses.Response {
 	if pageDetails.NewPage == 0 {
 		pageDetails.NewPage = 1
 	}
@@ -137,11 +152,14 @@ func (c OrderUseCase) ListOrders(userID int, pageDetails models.Pagination) ([]m
 
 	listOfOrders, err := c.OrderRepo.ListOrders(userID, pageDetails)
 	if err != nil {
-		return []models.OrdersListing{}, err
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't fetch orders", err.Error(), nil)
 	}
+
 	if len(listOfOrders) == 0 {
-		return []models.OrdersListing{}, errors.New("no failed orders")
+		return responses.ClientReponse(http.StatusNotFound, "no orders found", nil, nil)
 	}
+
 	orderListing := make([]models.OrdersListing, len(listOfOrders))
 	for ind := range listOfOrders {
 
@@ -149,7 +167,8 @@ func (c OrderUseCase) ListOrders(userID int, pageDetails models.Pagination) ([]m
 
 		orderItems, err := c.OrderRepo.ListOrderItems(int(listOfOrders[ind].ID))
 		if err != nil {
-			return orderListing, err
+			statusCode, _ := errorhandler.HandleDatabaseError(err)
+			return responses.ClientReponse(statusCode, "couldn't fetch orders", err.Error(), nil)
 		}
 
 		var orderItemsListing []models.OrderItemsListing
@@ -157,7 +176,8 @@ func (c OrderUseCase) ListOrders(userID int, pageDetails models.Pagination) ([]m
 		for i := range orderItems {
 			booklisting, err := c.ProductRepo.GetProduct(int(orderItems[i].BookID))
 			if err != nil {
-				return orderListing, err
+				statusCode, _ := errorhandler.HandleDatabaseError(err)
+				return responses.ClientReponse(statusCode, "couldn't fetch orders", err.Error(), nil)
 			}
 			orderItemsListing = append(orderItemsListing, models.OrderItemsListing{
 				BookID:   int(orderItems[i].BookID),
@@ -170,7 +190,8 @@ func (c OrderUseCase) ListOrders(userID int, pageDetails models.Pagination) ([]m
 
 		address, err := c.AddressRepo.GetAddress(listOfOrders[ind].AdressID, listOfOrders[ind].UserID)
 		if err != nil {
-			return orderListing, err
+			statusCode, _ := errorhandler.HandleDatabaseError(err)
+			return responses.ClientReponse(statusCode, "couldn't fetch orders", err.Error(), nil)
 		}
 		if listOfOrders[ind].PaymentMethodID == 1 {
 			orderListing[ind].PaymentMethod = "COD"
@@ -183,60 +204,30 @@ func (c OrderUseCase) ListOrders(userID int, pageDetails models.Pagination) ([]m
 		orderListing[ind].Items = orderItemsListing
 
 	}
-	return orderListing, err
+	return responses.ClientReponse(http.StatusOK, "orders fetched successfully", nil, orderListing)
 
 }
 
-func (c OrderUseCase) GetOrder(userID, orderID int) (models.OrdersListing, error) {
-	var orderListing models.OrdersListing
+func (c OrderUseCase) GetOrder(userID, orderID int) responses.Response {
+
 	order, err := c.OrderRepo.GetOrder(userID, orderID)
 	if err != nil {
-		return orderListing, err
+		statusCode, err := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't fetch order", err.Error(), nil)
 	}
-	copier.Copy(&orderListing, &order)
-	orderItems, err := c.OrderRepo.ListOrderItems(orderID)
-	if err != nil {
-		return orderListing, err
-	}
-	var orderItemsListing []models.OrderItemsListing
-	for i := range orderItems {
-		booklisting, err := c.ProductRepo.GetProduct(int(orderItems[i].BookID))
-		if err != nil {
-			return orderListing, err
-		}
-		orderItemsListing = append(orderItemsListing, models.OrderItemsListing{
-			BookID:   int(orderItems[i].BookID),
-			Title:    booklisting.Title,
-			Price:    orderItems[i].Price,
-			Quantity: orderItems[i].Quantity,
-			Total:    orderItems[i].Price * float64(orderItems[i].Quantity),
-		})
-	}
-	address, err := c.AddressRepo.GetAddress(order.AdressID, order.UserID)
-	if err != nil {
-		return orderListing, err
-	}
-	if order.PaymentMethodID == 1 {
-		orderListing.PaymentMethod = "COD"
-	}
-	if order.PaymentMethodID == 2 {
-		orderListing.PaymentMethod = "Online"
-	}
-	copier.Copy(&orderListing.Address, address)
-	orderListing.Items = orderItemsListing
-	return orderListing, nil
+	return c.MakeOrderResponse(order)
 }
 
 // to do  : make a pagination here
-func (c OrderUseCase) GetAllOrders(filter int) ([]domain.Order, error) {
+func (c OrderUseCase) GetAllOrders(filter int) responses.Response {
 	var list []domain.Order
 	var err error
 	list, err = c.OrderRepo.GetAllOrders(getTimeSpan(filter))
 	if err != nil {
-		return nil, err
+		statusCode, err := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't fetch all orders", err.Error(), nil)
 	}
-	fmt.Println("list :", list)
-	return list, nil
+	return responses.ClientReponse(http.StatusOK, "fetched all orders", nil, list)
 }
 
 var razorpayKey, razorpaySecret string
@@ -272,7 +263,7 @@ func MakeRazorpayPayment(Price float64) (string, error) {
 
 }
 
-func (c OrderUseCase) VerifyPayment(paymentData models.PaymentVerificationData) error {
+func (c OrderUseCase) VerifyPayment(paymentData models.PaymentVerificationData) responses.Response {
 
 	if paymentData.PaymentStatus == "captured" {
 		paymentData.PaymentStatus = "paid"
@@ -281,14 +272,15 @@ func (c OrderUseCase) VerifyPayment(paymentData models.PaymentVerificationData) 
 	err := c.OrderRepo.UpdatePaymentStatus(paymentData)
 
 	if err != nil {
-		return err
+		statusCode, err := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't verify payment", err.Error(), nil)
 	}
 
-	return nil
+	return responses.ClientReponse(http.StatusOK, "payment veryfied", nil, nil)
 
 }
 
-func (c OrderUseCase) GetInvoiveData(userID, orderID int) (models.InvoiceData, error) {
+func (c OrderUseCase) GetInvoiveData(userID, orderID int) responses.Response {
 
 	invoice := models.InvoiceData{
 		CompanyName:    "ReadON",
@@ -298,18 +290,21 @@ func (c OrderUseCase) GetInvoiveData(userID, orderID int) (models.InvoiceData, e
 	var err error
 	invoice.Order, err = c.OrderRepo.GetOrder(userID, orderID)
 	if err != nil {
-		return invoice, err
+		statusCode, err := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't process the request", err.Error(), nil)
 	}
 	orderItems, err := c.OrderRepo.ListOrderItems(orderID)
 	if err != nil {
-		return invoice, err
+		statusCode, err := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't process the request", err.Error(), nil)
 	}
 	invoice.Date = invoice.Order.CreatedAt.Format("2006-01-02 15:04 ") + "+5:30"
 	var orderItemsListing []models.OrderItemsListing
 	for i := range orderItems {
 		booklisting, err := c.ProductRepo.GetProduct(int(orderItems[i].BookID))
 		if err != nil {
-			return invoice, err
+			statusCode, err := errorhandler.HandleDatabaseError(err)
+			return responses.ClientReponse(statusCode, "couldn't process the request", err.Error(), nil)
 		}
 		orderItemsListing = append(orderItemsListing, models.OrderItemsListing{
 			BookID:   int(orderItems[i].BookID),
@@ -320,16 +315,17 @@ func (c OrderUseCase) GetInvoiveData(userID, orderID int) (models.InvoiceData, e
 		})
 	}
 	invoice.OrderItems = orderItemsListing
-	invoice.Address, err = c.AddressRepo.GetAddress(1, 1)
+	invoice.Address, err = c.AddressRepo.GetAddress(invoice.Order.AdressID, uint(userID))
 	if err != nil {
-		return invoice, err
+		statusCode, err := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't process the request", err.Error(), nil)
 	}
 	invoice.Total = invoice.Order.TotalPrice + invoice.Order.DeleveryCharge
 	fmt.Println("invoive data ,", invoice)
-	return invoice, nil
+	return responses.ClientReponse(http.StatusOK, "invoice generated", nil, invoice)
 }
 
-func (c OrderUseCase) GetChartData(pageDetails models.Pagination) (models.ChartData, error) {
+func (c OrderUseCase) GetChartData(pageDetails models.Pagination) responses.Response {
 	var chartData models.ChartData
 
 	start, end := getTimeSpan(pageDetails.Filter)
@@ -338,12 +334,12 @@ func (c OrderUseCase) GetChartData(pageDetails models.Pagination) (models.ChartD
 	data, err := c.OrderRepo.GetTotalAmountOfSpan(start, end.Add(-time.Millisecond), interval(pageDetails.Filter))
 	if err != nil {
 		fmt.Println("err", err)
-		return chartData, err
+		return responses.ClientReponse(http.StatusInternalServerError, "couldn't process the request", err.Error(), nil)
 	}
 	fmt.Println(data)
 	chartData.Span = []time.Time{start, end.Add(-time.Millisecond)}
 	chartData.Data = data
-	return chartData, nil
+	return responses.ClientReponse(http.StatusOK, "chart data fetched", nil, chartData)
 }
 
 func getTimeSpan(filter int) (time.Time, time.Time) {
@@ -397,22 +393,63 @@ func interval(filter int) string {
 	return ""
 }
 
-func (c OrderUseCase) GetTopTenCategory(filter models.Pagination) ([]models.TopTenCategory, error) {
+func (c OrderUseCase) GetTopTenCategory(filter models.Pagination) responses.Response {
 	data, err := c.OrderRepo.FindTopTenCategories(filter)
 	if err != nil {
-		return []models.TopTenCategory{}, err
+		statusCode, err := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't process the request", err.Error(), nil)
 	}
-	return data, nil
+	return responses.ClientReponse(http.StatusOK, "top ten categories fetched", nil, data)
 }
 
-func (c OrderUseCase) GetTopTenBooks(filter models.Pagination) ([]models.ListingBook, error) {
+func (c OrderUseCase) GetTopTenBooks(filter models.Pagination) responses.Response {
 	data, err := c.OrderRepo.FindTopTenBooks(filter)
 	if err != nil {
-		return []models.ListingBook{}, err
+		statusCode, err := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't process the request", err.Error(), nil)
 	}
 	var list []models.ListingBook
 	copier.Copy(&list, data)
 	fmt.Println("data :", data)
 	fmt.Println("lsit :", list)
-	return list, nil
+	return responses.ClientReponse(http.StatusOK, "top ten categories fetched", nil, data)
+}
+
+func (c OrderUseCase) MakeOrderResponse(order domain.Order) responses.Response {
+	var orderListing models.OrdersListing
+	copier.Copy(&orderListing, &order)
+	orderItems, err := c.OrderRepo.ListOrderItems(int(order.ID))
+	if err != nil {
+		statusCode, err := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't fetch order", err.Error(), nil)
+	}
+	var orderItemsListing []models.OrderItemsListing
+	for i := range orderItems {
+		booklisting, err := c.ProductRepo.GetProduct(int(orderItems[i].BookID))
+		if err != nil {
+			statusCode, err := errorhandler.HandleDatabaseError(err)
+			return responses.ClientReponse(statusCode, "couldn't fetch order", err.Error(), nil)
+		}
+		orderItemsListing = append(orderItemsListing, models.OrderItemsListing{
+			BookID:   int(orderItems[i].BookID),
+			Title:    booklisting.Title,
+			Price:    orderItems[i].Price,
+			Quantity: orderItems[i].Quantity,
+			Total:    orderItems[i].Price * float64(orderItems[i].Quantity),
+		})
+	}
+	address, err := c.AddressRepo.GetAddress(order.AdressID, order.UserID)
+	if err != nil {
+		statusCode, err := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't fetch order", err.Error(), nil)
+	}
+	if order.PaymentMethodID == 1 {
+		orderListing.PaymentMethod = "COD"
+	}
+	if order.PaymentMethodID == 2 {
+		orderListing.PaymentMethod = "Online"
+	}
+	copier.Copy(&orderListing.Address, address)
+	orderListing.Items = orderItemsListing
+	return responses.ClientReponse(http.StatusOK, "order fetched", nil, orderListing)
 }

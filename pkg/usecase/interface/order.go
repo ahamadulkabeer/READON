@@ -1,22 +1,22 @@
 package interfaces
 
 import (
-	"readon/pkg/domain"
+	"readon/pkg/api/responses"
 	"readon/pkg/models"
 )
 
 type OrderUseCase interface {
-	CreateOrder(userID, addressID, paymentMethoadID int, coupons []string) (string, error)
-	RetryOrder(userID, orderID int) (string, error)
-	CancelOrder(userID, orderID int) error
-	ListOrders(userID int, pagination models.Pagination) ([]models.OrdersListing, error)
-	GetOrder(userID, orderID int) (models.OrdersListing, error)
-	GetAllOrders(filter int) ([]domain.Order, error)
-	VerifyPayment(paymentData models.PaymentVerificationData) error
+	CreateOrder(userID, addressID, paymentMethoadID int, coupons []string) responses.Response
+	RetryOrder(userID, orderID int) responses.Response
+	CancelOrder(userID, orderID int) responses.Response
+	ListOrders(userID int, pagination models.Pagination) responses.Response
+	GetOrder(userID, orderID int) responses.Response
+	GetAllOrders(filter int) responses.Response
+	VerifyPayment(paymentData models.PaymentVerificationData) responses.Response
 	//DeletefailedRazorOrder(userID int) error
-	GetInvoiveData(userID, orderID int) (models.InvoiceData, error)
-	GetChartData(pageDetails models.Pagination) (models.ChartData, error)
+	GetInvoiveData(userID, orderID int) responses.Response
+	GetChartData(pageDetails models.Pagination) responses.Response
 
-	GetTopTenCategory(filter models.Pagination) ([]models.TopTenCategory, error)
-	GetTopTenBooks(filter models.Pagination) ([]models.ListingBook, error)
+	GetTopTenCategory(filter models.Pagination) responses.Response
+	GetTopTenBooks(filter models.Pagination) responses.Response
 }

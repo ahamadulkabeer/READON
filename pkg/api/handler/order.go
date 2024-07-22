@@ -10,7 +10,6 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/copier"
 )
 
 type OrderHAndler struct {
@@ -39,14 +38,14 @@ func (cr OrderHAndler) AddOrder(c *gin.Context) {
 	addressidstr := c.Query("addressId")
 	paymentMethoadId, err := strconv.Atoi(PaymentMethoadIdstr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, responses.RespondWithError(http.StatusBadRequest,
-			"Error while converting paymentMethoadId", err.Error()))
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
+			"Error while converting paymentMethoadId", err.Error(), nil))
 		return
 	}
 	addressID, err := strconv.Atoi(addressidstr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, responses.RespondWithError(http.StatusBadRequest,
-			"Error while converting addressId", err.Error()))
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
+			"Error while converting addressId", err.Error(), nil))
 		return
 	}
 
@@ -55,27 +54,17 @@ func (cr OrderHAndler) AddOrder(c *gin.Context) {
 	err = json.Unmarshal([]byte(couponsApplied), &couponsSlice)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
-			"Invalid coupons JSON format", err.Error(), couponsApplied))
-		fmt.Println("error while unmarshalling coupons array")
+			"Invalid coupons JSON format", err.Error(), nil))
 		return
 	}
+
 	fmt.Println("coupon applied  : ", couponsSlice)
+
 	userID := c.GetInt("userId")
 
-	// response may be a string razor order id
-	razorOrderId, err := cr.OrderUseCase.CreateOrder(userID, addressID, paymentMethoadId, couponsSlice)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, responses.RespondWithError(http.StatusBadRequest,
-			"could not place order ", err.Error()))
-		return
-	}
-	if paymentMethoadId == 1 {
-		c.JSON(http.StatusOK, responses.RespondWithSuccess(http.StatusOK, "order placed.", nil))
-		return
-	}
-	c.JSON(http.StatusOK, responses.RespondWithSuccess(http.StatusOK, "order placed.", gin.H{
-		"RazopayOrderId ": razorOrderId,
-	}))
+	response := cr.OrderUseCase.CreateOrder(userID, addressID, paymentMethoadId, couponsSlice)
+
+	c.JSON(response.StatusCode, response)
 }
 
 // retrying payment when payment failed
@@ -83,21 +72,14 @@ func (cr OrderHAndler) RetryOrder(c *gin.Context) {
 	orderidstr := c.Param("orderId")
 	orderId, err := strconv.Atoi(orderidstr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, responses.RespondWithError(http.StatusBadRequest,
-			"error getting param : orderId", err.Error()))
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
+			"error getting param : orderId", err.Error(), nil))
 		return
 	}
 	userID := c.GetInt("userId")
 
-	razorOrderId, err := cr.OrderUseCase.RetryOrder(userID, orderId)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, responses.RespondWithError(http.StatusInternalServerError,
-			"error while retrying order ", err.Error()))
-		return
-	}
-	c.JSON(http.StatusOK, responses.RespondWithSuccess(http.StatusOK, "order placed.", gin.H{
-		"RazopayOrderId ": razorOrderId,
-	}))
+	response := cr.OrderUseCase.RetryOrder(userID, orderId)
+	c.JSON(response.StatusCode, response)
 }
 
 // @Summary Cancel an order
@@ -115,20 +97,13 @@ func (cr OrderHAndler) CancelOrder(c *gin.Context) {
 	orderIdStr := c.Param("orderId")
 	orderID, err := strconv.Atoi(orderIdStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, responses.RespondWithError(http.StatusBadRequest,
-			"error getting param : orderId", err.Error()))
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
+			"error getting param : orderId", err.Error(), nil))
 		return
 	}
 	userID := c.GetInt("userId")
-	err = cr.OrderUseCase.CancelOrder(userID, orderID)
-	if err != nil {
-
-		c.JSON(http.StatusInternalServerError, responses.RespondWithError(http.StatusInternalServerError,
-			"order not cancelled", err))
-		return
-	}
-	c.JSON(http.StatusOK, responses.RespondWithSuccess(http.StatusOK,
-		"oder cancelled : "+orderIdStr, nil))
+	response := cr.OrderUseCase.CancelOrder(userID, orderID)
+	c.JSON(response.StatusCode, response)
 }
 
 // @Summary Get order details
@@ -145,19 +120,13 @@ func (cr OrderHAndler) GetOrder(c *gin.Context) {
 	orderIdStr := c.Param("orderId")
 	orderID, err := strconv.Atoi(orderIdStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, responses.RespondWithError(http.StatusBadRequest,
-			"error getting param : orderId", err.Error()))
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
+			"error getting param : orderId", err.Error(), nil))
 		return
 	}
 	userID := c.GetInt("userId")
-	order, err := cr.OrderUseCase.GetOrder(userID, orderID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, responses.RespondWithError(http.StatusInternalServerError,
-			"couldn't retreive order", err.Error()))
-		return
-	}
-
-	c.JSON(http.StatusOK, responses.RespondWithSuccess(http.StatusOK, "order retrived ", order))
+	response := cr.OrderUseCase.GetOrder(userID, orderID)
+	c.JSON(response.StatusCode, response)
 }
 
 // @Summary list a users orders
@@ -175,20 +144,14 @@ func (cr OrderHAndler) ListOrders(c *gin.Context) {
 
 	err := c.Bind(&pageDetails)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, responses.RespondWithError(http.StatusBadRequest,
-			"error while binding pagination data ", err.Error()))
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
+			"error while binding pagination data ", err.Error(), nil))
 	}
 
 	userID := c.GetInt("userId")
 
-	listOfOrders, err := cr.OrderUseCase.ListOrders(userID, pageDetails)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, responses.RespondWithError(http.StatusInternalServerError,
-			"couldn't retreive orders", err.Error()))
-		return
-	}
-
-	c.JSON(http.StatusOK, responses.RespondWithSuccess(http.StatusOK, "order retrived ", listOfOrders))
+	response := cr.OrderUseCase.ListOrders(userID, pageDetails)
+	c.JSON(response.StatusCode, response)
 }
 
 // @Summary Get all orders
@@ -205,19 +168,12 @@ func (cr OrderHAndler) GetAllOrders(c *gin.Context) {
 
 	err := c.Bind(&pageDetails)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, responses.RespondWithError(http.StatusBadRequest,
-			"error while binding pagination data ", err.Error()))
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
+			"error while binding pagination data ", err.Error(), nil))
 	}
 
-	list, err := cr.OrderUseCase.GetAllOrders(pageDetails.Filter)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, responses.RespondWithError(http.StatusInternalServerError,
-			"couldn't retreive orders", err.Error()))
-		return
-	}
-	var orderslist []models.OrdersListing
-	copier.Copy(&orderslist, &list)
-	c.JSON(http.StatusOK, responses.RespondWithSuccess(http.StatusOK, "order retrived ", list))
+	response := cr.OrderUseCase.GetAllOrders(pageDetails.Filter)
+	c.JSON(response.StatusCode, response)
 }
 
 // to handle weebhook from razorpay on paymentcaptured and payment failed
@@ -227,7 +183,7 @@ func (cr OrderHAndler) VerifyPayment(c *gin.Context) {
 
 	if err := json.NewDecoder(c.Request.Body).Decode(&body); err != nil {
 		fmt.Println("error while decoding JSON body:", err)
-		c.JSON(http.StatusBadRequest, "error while decoding JSON body")
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest, "error while decoding JSON body", err.Error(), nil))
 		return
 	}
 	p, _ := body["payload"].(map[string]interface{})["payment"].(map[string]interface{})["entity"].(map[string]interface{})
@@ -237,32 +193,24 @@ func (cr OrderHAndler) VerifyPayment(c *gin.Context) {
 	verificationData.RazorOrderId, ok = body["payload"].(map[string]interface{})["payment"].(map[string]interface{})["entity"].(map[string]interface{})["order_id"].(string)
 	if !ok || verificationData.RazorOrderId == "" {
 		fmt.Println("order_id not found in payload")
-		c.JSON(http.StatusBadRequest, "order_id not found in payload")
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest, "order_id not found in payload", "order_id not found in payload", nil))
 		return
 	}
 	verificationData.PaymentStatus, ok = body["payload"].(map[string]interface{})["payment"].(map[string]interface{})["entity"].(map[string]interface{})["status"].(string)
 	if !ok || verificationData.RazorOrderId == "" {
 		fmt.Println("payment status not found in payload")
-		c.JSON(http.StatusBadRequest, "status not found in payload")
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest, "status not found in payload", "status not found in payload", nil))
 		return
 	}
 	verificationData.RazorPaymentId, ok = body["payload"].(map[string]interface{})["payment"].(map[string]interface{})["entity"].(map[string]interface{})["id"].(string)
 	if !ok || verificationData.RazorOrderId == "" {
 		fmt.Println("payment_id not found in payload")
-		c.JSON(http.StatusBadRequest, "id not found in payload")
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest, "id not found in payload", "id not found in payload", nil))
 		return
 	}
-	err := cr.OrderUseCase.VerifyPayment(verificationData)
-	if err != nil {
-		errResponse := models.ErrorResponse{
-			Err:    err.Error(),
-			Status: "could not update payment details",
-			Hint:   "please try again",
-		}
-		fmt.Println("err : ", errResponse)
-		return
-	}
-	c.JSON(http.StatusOK, "payment verified")
+	response := cr.OrderUseCase.VerifyPayment(verificationData)
+
+	c.JSON(response.StatusCode, response)
 }
 
 func (cr OrderHAndler) DownloadInvoice(c *gin.Context) {
@@ -275,18 +223,12 @@ func (cr OrderHAndler) DownloadInvoice(c *gin.Context) {
 	}
 	userID := c.GetInt("userId")
 
-	//for bypassing cookie :to delete before hosting
-	if userID == 0 {
-		userID = 1
-	}
-
-	invoice, err := cr.OrderUseCase.GetInvoiveData(userID, orderID)
-	// invoice, err := cr.OrderUseCase.GetInvoiveData(1, 1)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, responses.RespondWithError(http.StatusInternalServerError,
-			"couldn't retreive data", err.Error()))
+	response := cr.OrderUseCase.GetInvoiveData(userID, orderID)
+	if response.Error != "" {
+		c.JSON(response.StatusCode, response)
 		return
 	}
+	invoice := response.Data.(models.InvoiceData)
 	c.HTML(http.StatusOK, "invoice.html", invoice)
 }
 
@@ -295,16 +237,12 @@ func (cr OrderHAndler) GetChart(c *gin.Context) {
 
 	err := c.Bind(&pageDetails)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, responses.RespondWithError(http.StatusBadRequest,
-			"error while binding pagination data ", err.Error()))
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
+			"error while binding pagination data ", err.Error(), nil))
 	}
-	data, err := cr.OrderUseCase.GetChartData(pageDetails)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, responses.RespondWithError(http.StatusInternalServerError,
-			"couldn't retreive data", err.Error()))
-		return
-	}
-	c.JSON(http.StatusOK, responses.RespondWithSuccess(http.StatusOK, "chart generated .", data))
+	response := cr.OrderUseCase.GetChartData(pageDetails)
+
+	c.JSON(response.StatusCode, response)
 
 }
 
@@ -313,26 +251,18 @@ func (cr OrderHAndler) GetTopTen(c *gin.Context) {
 
 	err := c.Bind(&pageDetails)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, responses.RespondWithError(http.StatusBadRequest,
-			"error while binding pagination data ", err.Error()))
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
+			"error while binding pagination data ", err.Error(), nil))
 	}
 	if pageDetails.Filter == 1 {
-		data, err := cr.OrderUseCase.GetTopTenCategory(pageDetails)
-		if err != nil {
-			c.JSON(http.StatusNotFound, nil)
-			return
-		}
-		c.JSON(http.StatusOK, responses.RespondWithSuccess(http.StatusOK, "categories found ", data))
+		response := cr.OrderUseCase.GetTopTenCategory(pageDetails)
+		c.JSON(response.StatusCode, response)
 		return
 	}
 
 	if pageDetails.Filter == 2 {
-		data, err := cr.OrderUseCase.GetTopTenBooks(pageDetails)
-		if err != nil {
-			c.JSON(http.StatusNotFound, nil)
-			return
-		}
-		c.JSON(http.StatusOK, responses.RespondWithSuccess(http.StatusOK, "top ten books  ", data))
+		response := cr.OrderUseCase.GetTopTenBooks(pageDetails)
+		c.JSON(response.StatusCode, response)
 		return
 	}
 
