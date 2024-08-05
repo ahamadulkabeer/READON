@@ -1,8 +1,6 @@
 package repository
 
 import (
-	"fmt"
-	"log"
 	"readon/pkg/domain"
 	"readon/pkg/models"
 	interfaces "readon/pkg/repository/interface"
@@ -23,16 +21,19 @@ func NewCouponRepository(db *gorm.DB) interfaces.CouponRepository {
 func (c CouponDatabase) CreateNewCoupon(coupon domain.Coupon) (domain.Coupon, error) {
 	err := c.DB.Create(&coupon).Error
 	if err != nil {
-		log.Println(err)
 		return domain.Coupon{}, err
 	}
 	return coupon, nil
 }
 
 func (c CouponDatabase) DeleteCoupon(couponID uint) error {
+	// transaction needed
 	err := c.DB.Delete(&domain.Coupon{}, "id = ?", couponID).Error
 	if err != nil {
-		log.Println(err)
+		return err
+	}
+	err = c.DB.Delete(&domain.UserCoupon{}, "coupon_id = ?", couponID).Error
+	if err != nil {
 		return err
 	}
 	return nil
@@ -42,7 +43,6 @@ func (c CouponDatabase) ListAllCoupon(pageDet models.Pagination) ([]domain.Coupo
 	var list []domain.Coupon
 	err := c.DB.Find(&list).Limit(pageDet.Size).Error
 	if err != nil {
-		log.Println(err)
 		return []domain.Coupon{}, err
 	}
 	return list, err
@@ -50,11 +50,9 @@ func (c CouponDatabase) ListAllCoupon(pageDet models.Pagination) ([]domain.Coupo
 
 func (c CouponDatabase) ListCoupons(userID int, pageDet models.Pagination) ([]domain.UserCoupon, error) {
 	var list []domain.UserCoupon
-	err := c.DB.Where("userid = ?", userID).Find(&list).Error
+	err := c.DB.Where("userid = ?", userID).Preload("Coupon").Find(&list).Error
 	if err != nil {
-		fmt.Println("Db err :", err.Error())
-		return list, err
-
+		return []domain.UserCoupon{}, err
 	}
 	return list, nil
 }
@@ -68,10 +66,13 @@ func (c CouponDatabase) GetCouponByID(couponID uint) (domain.Coupon, error) {
 	return coupon, nil
 }
 
-func (c CouponDatabase) IssueCoupon(userCoupon domain.UserCoupon) error {
-	err := c.DB.Create(&userCoupon).Error
+func (c CouponDatabase) IssueCoupon(userCoupon *domain.UserCoupon) error {
+	err := c.DB.Create(userCoupon).Error
 	if err != nil {
-		log.Println(err)
+		return err
+	}
+	err = c.DB.Model(&userCoupon).Where("id = ? ", userCoupon.ID).Preload("Coupon").Find(userCoupon).Error
+	if err != nil {
 		return err
 	}
 	return nil
@@ -79,9 +80,8 @@ func (c CouponDatabase) IssueCoupon(userCoupon domain.UserCoupon) error {
 
 func (c CouponDatabase) ListCouponsbyUser(userID uint) ([]domain.UserCoupon, error) {
 	var list []domain.UserCoupon
-	err := c.DB.Where("user_id = ?", userID).Find(&list).Error
+	err := c.DB.Where("user_id = ?", userID).Preload("Coupon").Find(&list).Error
 	if err != nil {
-		log.Println(err)
 		return []domain.UserCoupon{}, err
 	}
 	return list, nil
@@ -101,17 +101,14 @@ func (c CouponDatabase) MarkCouponAsRedemed(couponCode string, orderID uint) err
 	err := c.DB.Model(&domain.UserCoupon{}).Where("coupon_code = ?", couponCode).
 		Updates(map[string]interface{}{"redeemed": true, "redeemed_on": orderID}).Error
 	if err != nil {
-		fmt.Println("db err :", err)
 		return err
 	}
 	return nil
 }
 
-func (c CouponDatabase) DeleteCouponUser(couponCode string) error {
+func (c CouponDatabase) DeleteUserCoupon(couponCode string) error {
 	err := c.DB.Where("coupon_code = ?", couponCode).Delete(&domain.UserCoupon{}).Error
-
 	if err != nil {
-		fmt.Println("db err :", err)
 		return err
 	}
 	return nil
@@ -122,7 +119,6 @@ func (c CouponDatabase) MarkCouponAsNotRedeemed(orderID uint) error {
 		Updates(map[string]interface{}{"redeemed": false, "redeemed_on": nil}).Error
 
 	if err != nil {
-		log.Println("db err : ", err)
 		return err
 	}
 	return nil

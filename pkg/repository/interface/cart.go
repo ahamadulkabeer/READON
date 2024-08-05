@@ -6,9 +6,10 @@ type CartRepository interface {
 	AddItem(newCartItem domain.Cart) error
 	UpdateQty(userId, bookId, NQty int) error
 	DeleteItem(userId, bookId int) error
+	GetItem(bookID uint) (domain.Cart, error)
 	GetItems(userId int) ([]domain.Cart, error)
 	GetTotalCartPrice(userId int) (float64, error)
-	CheckForItem(userId, bookId int) (int, error)
+	GetItemQuantity(userId, bookId int) (int, error)
 }
 
 // In the GetItems instead of domain.cart must use another on somethin useful like costomizedobject with everything need ed

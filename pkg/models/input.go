@@ -17,8 +17,8 @@ type LoginData struct {
 }
 
 type Newcategory struct {
-	Name string `form:"name"`
-	//Description string `form:"description"`
+	Name        string `form:"name"`
+	Description string `form:"description"`
 }
 
 type Product struct {
@@ -40,16 +40,30 @@ type ProductUpdate struct {
 }
 
 type Coupon struct {
-	Name               string `form:"name"`
-	Description        string `form:"description"`
-	CouponPrefix       string `form:"prefix"`
-	ValidFrom          string `form:"validfrom"`
-	ValidTill          string `form:"validtill"`
-	MaxQuantity        int    `form:"quantity"`
-	DiscountType       string `form:"type"`
-	DiscountAmount     int    `form:"amount"`
-	ApplicableOn       string `form:"applicableon"`
-	ApplicableCategory string `form:"applicablecategory"`
-	ApplicableProduct  string `form:"applicableproduct"`
-	IsBound            bool   `form:"isbound"`
+	Name               string  `form:"name"`
+	Description        string  `form:"description"`
+	CouponPrefix       string  `form:"prefix"`
+	ValidFrom          string  `form:"validFrom"`
+	ValidTill          string  `form:"validTill"`
+	Limited            bool    `form:"limited"`
+	MaxQuantity        int     `form:"maxQuantity"`
+	MaxDiscount        float64 `form:"maxDiscount"`
+	DiscountType       string  `form:"type"`
+	DiscountAmount     int     `form:"amount"`
+	ApplicableOn       string  `form:"applicableOn"`
+	ApplicableCategory string  `form:"applicableCategory"`
+	ApplicableProduct  string  `form:"applicableProduct"`
+	IsBound            bool    `form:"isBound"`
+}
+type Address struct {
+	Name      string `gorm:"not null" form:"name"`
+	HouseNo   string `form:"houseNo"`
+	HouseName string `form:"houseName"`
+	Place     string `gorm:"not null" form:"place"`
+	Landmark  string `form:"landmark"`
+	City      string `gorm:"not null" form:"city"`
+	District  string `gorm:"not null" form:"district"`
+	Country   string `gorm:"not null" form:"country"`
+	Pincode   string `gorm:"not null" form:"pincode"`
+	Mobile    string `gorm:"not null" form:"mobile"`
 }

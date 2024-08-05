@@ -77,9 +77,8 @@ func ValidateCategory(category string) error {
 	return nil
 }
 
-func ValidateUserUPdateData(user *models.UserUpdateData) error {
+func ValidateUserUPdateData(user *models.UserUpdateData) (bool, error) {
 
-	// Validation passed
-	fmt.Println("Validation successful")
-	return nil
+	return ValidateName(user.Name)
+
 }

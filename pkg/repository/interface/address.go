@@ -9,4 +9,6 @@ type AddressRepository interface {
 	GetAddress(addressID, userID uint) (domain.Address, error)
 	DeleteAddress(addressID, userID uint) error
 	AddressBelongsToUser(userID, addressID uint) (bool, error)
+	GetNumberOfAdresses(userID uint) (int, error)
+	AddressFound(addressID uint) (bool, error)
 }

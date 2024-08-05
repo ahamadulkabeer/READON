@@ -1,13 +1,16 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"readon/pkg/api/responses"
 	"readon/pkg/domain"
+	"readon/pkg/models"
 	services "readon/pkg/usecase/interface"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/copier"
 )
 
 type AddressHandler struct {
@@ -20,52 +23,68 @@ func NewAddressHandler(usecase services.AddressUsecase) *AddressHandler {
 	}
 }
 
-// @Summary Add address
-// @Description Add a new address for a user.
-// @Tags address
-// @Accept json
+// AddAddress godoc
+// @Summary Add a new address
+// @Description Add a new address to the system. Requires user authentication and a valid address payload.
+// @Tags Address
+// @Accept x-www-form-urlencoded
 // @Produce json
-// @Param address body domain.Address true "Address details"
-// @Success 200 {string} string "Address added"
-// @Failure 400 {object} models.ErrorResponse
-// @Failure 500 {object} models.ErrorResponse
-// @Router /user/addaddress [post]
+// @Param addressInput formData models.Address true "Address Input"
+// @Success 201 {object} responses.Response{data=models.ListAddress} "Created"
+// @Failure 400 {object} responses.Response "Bad Request"
+// @Failure 401 {object} responses.Response "Unauthorized"
+// @Failure 403 {object} responses.Response "Forbidden"
+// @Failure 404 {object} responses.Response "Not Found"
+// @Failure 500 {object} responses.Response "Internal Server Error"
+// @Router /users/addresses [post]
 func (cr AddressHandler) AddAddress(c *gin.Context) {
-	var address domain.Address
-	err := c.Bind(&address)
+	var addressInput models.Address
+	err := c.Bind(&addressInput)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
 			"Error while binding parameters , pls check the input ", err.Error(), nil))
 		return
 	}
+	var newAddress domain.Address
+	copier.Copy(&newAddress, &addressInput)
 
+	fmt.Println("newaddress ,", newAddress)
 	userID := c.GetInt("userId")
-	address.UserID = uint(userID)
+	newAddress.UserID = uint(userID)
 
-	response := cr.AddressUseCase.AddAddress(address)
+	response := cr.AddressUseCase.AddAddress(newAddress)
 
 	c.JSON(response.StatusCode, response)
 
 }
 
-// @Summary Update address
-// @Description Update an existing address for a user.
-// @Tags address
-// @Accept json
+// UpdateAddress godoc
+// @Summary Update an existing address
+// @Description Update an address in the system. Requires user authentication and a valid address payload. The address must exist and belong to the authenticated user.
+// @Tags Address
+// @Accept x-www-form-urlencoded
 // @Produce json
-// @Param address body domain.Address true "Updated address details"
-// @Success 200 {string} string "Address updated"
-// @Failure 400 {object} models.ErrorResponse
-// @Failure 500 {object} models.ErrorResponse
-// @Router /user/updateaddress [put]
+// @Param addressId path int true "Address ID"
+// @Param addressInput formData models.Address true "Address Input"
+// @Success 200 {object} responses.Response{data=models.ListAddress} "Address Updated"
+// @Failure 400 {object} responses.Response "Bad Request"
+// @Failure 401 {object} responses.Response "Unauthorized"
+// @Failure 404 {object} responses.Response "Not Found"
+// @Failure 500 {object} responses.Response "Internal Server Error"
+// @Router /users/addresses/{addressId} [put]
 func (cr AddressHandler) UpdateAddress(c *gin.Context) {
-	var address domain.Address
-	err := c.Bind(&address)
+	var addressInput models.Address
+	err := c.Bind(&addressInput)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
 			"Error while binding parameters , pls check the input ", err.Error(), nil))
 		return
 	}
+	var newAddress domain.Address
+	copier.Copy(&newAddress, &addressInput)
+
+	fmt.Println("newaddress ,", newAddress)
+
 	addressIdStr := c.Param("addressId")
 	addressID, err := strconv.Atoi(addressIdStr)
 	if err != nil {
@@ -76,21 +95,24 @@ func (cr AddressHandler) UpdateAddress(c *gin.Context) {
 
 	userID := c.GetInt("userId")
 
-	address.UserID = uint(userID)
-	address.ID = uint(addressID)
-	response := cr.AddressUseCase.EditAddress(address)
+	newAddress.UserID = uint(userID)
+	newAddress.ID = uint(addressID)
+	response := cr.AddressUseCase.EditAddress(newAddress)
 	c.JSON(response.StatusCode, response)
 }
 
-// @Summary Delete address
-// @Description Delete an address by its ID.
-// @Tags address
+// DeleteAddress godoc
+// @Summary Delete an address
+// @Description Delete an address from the system. Requires user authentication. The address must exist and belong to the authenticated user.
+// @Tags Address
 // @Produce json
-// @Param addressid query int true "Address ID"
-// @Success 200 {string} string "Address deleted"
-// @Failure 400 {object} models.ErrorResponse
-// @Failure 500 {object} models.ErrorResponse
-// @Router /user/deleteaddress [delete]
+// @Param addressId path int true "Address ID"
+// @Success 200 {object} responses.Response{data=map[string]interface{}} "Address Deleted"
+// @Failure 400 {object} responses.Response "Bad Request"
+// @Failure 401 {object} responses.Response "Unauthorized"
+// @Failure 404 {object} responses.Response "Not Found"
+// @Failure 500 {object} responses.Response "Internal Server Error"
+// @Router /users/addresses/{addressId} [delete]
 func (cr AddressHandler) DeleteAddress(c *gin.Context) {
 	addressIdStr := c.Param("addressId")
 	addressID, err := strconv.Atoi(addressIdStr)
@@ -105,15 +127,18 @@ func (cr AddressHandler) DeleteAddress(c *gin.Context) {
 	c.JSON(response.StatusCode, response)
 }
 
-// @Summary Get address
-// @Description Retrieve an address by its ID.
-// @Tags address
+// GetAddress godoc
+// @Summary Get an address
+// @Description Retrieve an address from the system. Requires user authentication. The address must exist and belong to the authenticated user.
+// @Tags Address
 // @Produce json
-// @Param addressid query int true "Address ID"
-// @Success 200 {object} models.ListAddress "Address details"
-// @Failure 400 {object} models.ErrorResponse
-// @Failure 500 {object} models.ErrorResponse
-// @Router /user/getaddress [get]
+// @Param addressId path int true "Address ID"
+// @Success 200 {object} responses.Response{data=models.ListAddress} "Address Retrieved"
+// @Failure 400 {object} responses.Response "Bad Request"
+// @Failure 401 {object} responses.Response "Unauthorized"
+// @Failure 404 {object} responses.Response "Not Found"
+// @Failure 500 {object} responses.Response "Internal Server Error"
+// @Router /users/addresses/{addressId} [get]
 func (cr AddressHandler) GetAddress(c *gin.Context) {
 	addressIdStr := c.Param("addressId")
 	addressID, err := strconv.Atoi(addressIdStr)
@@ -128,15 +153,16 @@ func (cr AddressHandler) GetAddress(c *gin.Context) {
 	c.JSON(response.StatusCode, response)
 }
 
-// @Summary List addresses
-// @Description Retrieve a list of addresses for a user by user ID.
-// @Tags address
+// ListAddress godoc
+// @Summary List all addresses for a user.
+// @Description Retrieve a list of addresses associated with the authenticated user. Requires user authentication.
+// @Tags Address
 // @Produce json
-// @Param userid query int true "User ID"
-// @Success 200 {array} []models.ListAddress "List of addresses"
-// @Failure 400 {object} models.ErrorResponse
-// @Failure 500 {object} models.ErrorResponse
-// @Router /user/listaddresses [get]
+// @Success 200 {object} responses.Response{data=[]models.ListAddress} "Addresses Retrieved"
+// @Failure 400 {object} responses.Response "Bad Request"
+// @Failure 401 {object} responses.Response "Unauthorized"
+// @Failure 500 {object} responses.Response "Internal Server Error"
+// @Router /users/addresses [get]
 func (cr AddressHandler) ListAddress(c *gin.Context) {
 
 	userID := c.GetInt("userId")

@@ -70,3 +70,24 @@ func (c AddressDatabase) AddressBelongsToUser(userID, addressID uint) (bool, err
 	}
 	return true, nil
 }
+
+func (c AddressDatabase) GetNumberOfAdresses(userID uint) (int, error) {
+	var count int64
+	err := c.DB.Model(&domain.Address{}).Where("user_id = ?", userID).Count(&count).Error
+	if err != nil {
+		return 0, err
+	}
+	return int(count), nil
+}
+
+func (c AddressDatabase) AddressFound(addressID uint) (bool, error) {
+	var count int64
+	err := c.DB.Model(&domain.Address{}).Where("id = ?", addressID).Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	if count == 0 {
+		return false, nil
+	}
+	return true, nil
+}

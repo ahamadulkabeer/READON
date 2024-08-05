@@ -1,12 +1,16 @@
 package usecase
 
 import (
+	"fmt"
 	"net/http"
 	"readon/pkg/api/errorhandler"
 	"readon/pkg/api/responses"
 	domain "readon/pkg/domain"
+	"readon/pkg/models"
 	interfaces "readon/pkg/repository/interface"
 	services "readon/pkg/usecase/interface"
+
+	"github.com/jinzhu/copier"
 )
 
 type CartUseCase struct {
@@ -23,98 +27,168 @@ func NewCartUseCase(crepo interfaces.CartRepository, prepo interfaces.ProductRep
 
 func (c CartUseCase) AddItem(userId, bookId int) responses.Response {
 
-	count, err := c.CartRepo.CheckForItem(userId, bookId)
+	// check if the item exist in the user's cart and gets the quantity
+	quantity, err := c.CartRepo.GetItemQuantity(userId, bookId)
 	if err != nil {
 		statusCode, _ := errorhandler.HandleDatabaseError(err)
-		return responses.ClientReponse(statusCode, "couldn't add item", err, nil)
+		return responses.ClientReponse(statusCode, "couldn't add item", err.Error(), nil)
 	}
 
-	if count != 0 {
-		count++
-		err = c.CartRepo.UpdateQty(userId, int(bookId), count)
+	// if !exist : add item
+	if quantity <= 0 {
+		// get the items price
+		price, err := c.ProductRepo.GetPrice(int(bookId))
 		if err != nil {
 			statusCode, _ := errorhandler.HandleDatabaseError(err)
-			return responses.ClientReponse(statusCode, "couldn't add item", err, nil)
+			return responses.ClientReponse(statusCode, "couldn't add item", err.Error(), nil)
 		}
-		return responses.ClientReponse(http.StatusOK, " item added ", err, nil)
+
+		// initilising the cart item
+		newCartItem := domain.Cart{
+			UserID:   uint(userId),
+			BookID:   uint(bookId),
+			Price:    price,
+			Quantity: 1,
+		}
+
+		// add item to cart
+		err = c.CartRepo.AddItem(newCartItem)
+		if err != nil {
+			statusCode, _ := errorhandler.HandleDatabaseError(err)
+			return responses.ClientReponse(statusCode, "couldn't add item", err.Error(), nil)
+		}
+		// continue...
 	}
 
-	price, err := c.ProductRepo.GetPrice(int(bookId))
+	// if exist :  increate the quatity by 1
+	if quantity > 0 {
+		quantity++
+		err = c.CartRepo.UpdateQty(userId, int(bookId), quantity)
+		if err != nil {
+			statusCode, _ := errorhandler.HandleDatabaseError(err)
+			return responses.ClientReponse(statusCode, "couldn't add item", err.Error(), nil)
+		}
+		//continue...
+	}
+
+	// get cart item
+	newCartItem, err := c.CartRepo.GetItem(uint(bookId))
 	if err != nil {
-		statusCode, _ := errorhandler.HandleDatabaseError(err)
-		return responses.ClientReponse(statusCode, "couldn't add item", err, nil)
+		_, _ = errorhandler.HandleDatabaseError(err)
+		fmt.Println("err :", err.Error())
+		//return responses.ClientReponse(statusCode, "couldn't add item", err.Error(), nil)
 	}
 
-	newCartItem := domain.Cart{
-		UserID:   uint(userId),
-		BookID:   uint(bookId),
-		Price:    price,
-		Quantity: 1,
-	}
-
-	err = c.CartRepo.AddItem(newCartItem)
-	if err != nil {
-		statusCode, _ := errorhandler.HandleDatabaseError(err)
-		return responses.ClientReponse(statusCode, "couldn't add item", err, nil)
-	}
-	return responses.ClientReponse(http.StatusOK, "item added to cart", nil, nil)
+	//response with nessessary data
+	var cartItem models.ListCartItem
+	copier.Copy(&cartItem, &newCartItem)
+	cartItem.TotalPrice = cartItem.Price * float64(cartItem.Quantity)
+	return responses.ClientReponse(http.StatusOK, "item added to cart", nil, cartItem)
 }
 
-func (c CartUseCase) UpdateQty(userId, bookId, qty int) responses.Response {
-	if qty <= 0 {
+func (c CartUseCase) UpdateQty(userId, bookId, newQuantity int) responses.Response {
+
+	// if new quantity is less than 1 : removeitem from cart
+	if newQuantity <= 0 {
 		err := c.CartRepo.DeleteItem(userId, bookId)
 		if err != nil {
 			statusCode, _ := errorhandler.HandleDatabaseError(err)
-			return responses.ClientReponse(statusCode, "couldn't update item quantity", err, nil)
+			return responses.ClientReponse(statusCode, "couldn't update item quantity", err.Error(), nil)
 		}
 		return responses.ClientReponse(http.StatusOK, "item quantity updated", nil, nil)
 	}
 
-	count, err := c.CartRepo.CheckForItem(userId, bookId)
+	// check for the item in the cart and get item quantity
+	qty, err := c.CartRepo.GetItemQuantity(userId, bookId)
 	if err != nil {
 		statusCode, _ := errorhandler.HandleDatabaseError(err)
-		return responses.ClientReponse(statusCode, "couldn't update item quantity", err, nil)
+		return responses.ClientReponse(statusCode, "couldn't update item quantity", err.Error(), nil)
 	}
-
-	if count == 0 {
+	if qty == 0 {
 		return responses.ClientReponse(http.StatusNotFound, "couldn't update item quantity", "item not found in the cart", nil)
 	}
 
-	err = c.CartRepo.UpdateQty(userId, bookId, qty)
+	// updates item quantity with new quantity
+	err = c.CartRepo.UpdateQty(userId, bookId, newQuantity)
 	if err != nil {
 		statusCode, _ := errorhandler.HandleDatabaseError(err)
-		return responses.ClientReponse(statusCode, "couldn't update item quantity", err, nil)
+		return responses.ClientReponse(statusCode, "couldn't update item quantity", err.Error(), nil)
 	}
 
-	return responses.ClientReponse(http.StatusOK, "item quantity updated", nil, nil)
+	// get cart item
+	newCartItem, err := c.CartRepo.GetItem(uint(bookId))
+	if err != nil {
+		_, _ = errorhandler.HandleDatabaseError(err)
+		fmt.Println("err :", err.Error())
+		//return responses.ClientReponse(statusCode, "couldn't add item", err.Error(), nil)
+	}
+
+	//response with nessessary data
+	var cartItem models.ListCartItem
+	copier.Copy(&cartItem, &newCartItem)
+	cartItem.TotalPrice = cartItem.Price * float64(cartItem.Quantity)
+	return responses.ClientReponse(http.StatusOK, "item quantity updated", nil, cartItem)
 }
 
 func (c CartUseCase) DeleteItem(userId, bookId int) responses.Response {
-	count, err := c.CartRepo.CheckForItem(userId, bookId)
+
+	//  get quantity and check if item exist in user's cart  get quantity
+	qty, err := c.CartRepo.GetItemQuantity(userId, bookId)
 	if err != nil {
 		statusCode, _ := errorhandler.HandleDatabaseError(err)
-		return responses.ClientReponse(statusCode, "couldn't remove item from cart", err, nil)
+		return responses.ClientReponse(statusCode, "couldn't remove item from cart", err.Error(), nil)
 	}
-	if count == 0 {
+	if qty == 0 {
 		return responses.ClientReponse(http.StatusNotFound, "couldn't remove item from cart", "item not found on cart !", nil)
 	}
+
+	// delete cart
 	err = c.CartRepo.DeleteItem(userId, bookId)
 	if err != nil {
 		statusCode, _ := errorhandler.HandleDatabaseError(err)
-		return responses.ClientReponse(statusCode, "couldn't remove item from cart", err, nil)
+		return responses.ClientReponse(statusCode, "couldn't remove item from cart", err.Error(), nil)
 	}
-	return responses.ClientReponse(http.StatusOK, "item removed from the cart", nil, nil)
+
+	//response with nessessary data
+	cartData, err := c.CartRepo.GetItems(userId)
+	if err != nil {
+		_, _ = errorhandler.HandleDatabaseError(err)
+	}
+	var cart models.ListCart
+	for _, x := range cartData {
+		var cartItem models.ListCartItem
+		copier.Copy(&cartItem, &x)
+		cartItem.TotalPrice = x.Price * float64(x.Quantity)
+		cart.TotalPrice += cartItem.TotalPrice
+		cart.TotalQuantity += cartItem.Quantity
+		cart.Items = append(cart.Items, cartItem)
+	}
+	return responses.ClientReponse(http.StatusOK, "item removed from the cart", nil, cart)
 }
 
 func (c CartUseCase) GetCart(userId int) responses.Response {
-	var cart []domain.Cart
-	cart, err := c.CartRepo.GetItems(userId)
+	// retrieve user's cart
+	cartData, err := c.CartRepo.GetItems(userId)
 	if err != nil {
 		statusCode, _ := errorhandler.HandleDatabaseError(err)
-		return responses.ClientReponse(statusCode, "couldn't fetch user's cart", err, nil)
+		return responses.ClientReponse(statusCode, "couldn't fetch user's cart", err.Error(), nil)
 	}
-	if len(cart) == 0 {
+
+	// if cart is empty
+	if len(cartData) == 0 {
 		return responses.ClientReponse(http.StatusOK, "cart is empty", nil, nil)
 	}
+
+	//response with nessessary data
+	var cart models.ListCart
+	for _, x := range cartData {
+		var cartItem models.ListCartItem
+		copier.Copy(&cartItem, &x)
+		cartItem.TotalPrice = x.Price * float64(x.Quantity)
+		cart.TotalPrice += cartItem.TotalPrice
+		cart.TotalQuantity += cartItem.Quantity
+		cart.Items = append(cart.Items, cartItem)
+	}
+
 	return responses.ClientReponse(http.StatusOK, "cart fetched successfully", nil, cart)
 }

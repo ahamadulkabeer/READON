@@ -2,22 +2,22 @@ package interfaces
 
 import (
 	"readon/pkg/api/responses"
-	domain "readon/pkg/domain"
+	"readon/pkg/domain"
 	"readon/pkg/models"
 )
 
 type UserUseCase interface {
 	Save(userInput models.SignupData) responses.Response
 
-	UpdateUser(user models.UserUpdateData) (domain.User, error)
+	UpdateUser(user models.UserUpdateData) responses.Response
 
 	UserLogin(userinput models.LoginData) responses.Response
 
-	GetUserProfile(int) (domain.User, error)
+	GetUserProfile(userID int) responses.Response
 
-	DeleteUserAccount(int) error
+	DeleteUserAccount(userID int) responses.Response
 
-	VerifyAndSendOtp(string) error
+	VerifyAndSendOtp(email string) responses.Response
 
-	VerifyOtp(string, string) error
+	VerifyOtp(otpData domain.Otp) responses.Response
 }

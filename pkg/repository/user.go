@@ -90,7 +90,7 @@ func (c *userDatabase) FindByEmail(email string) (domain.User, error) {
 		return user, db.Error
 	}
 	if db.RowsAffected <= 0 {
-		return user, errors.New("email not found")
+		return user, nil
 	}
 	return user, nil
 }

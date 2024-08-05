@@ -13,18 +13,18 @@ type Coupon struct {
 	Prefix             string
 	DiscountType       string
 	DiscountAmount     int
+	MaxDiscount        float64
 	ApplicableOn       string
 	ApplicableCategory string
 	ApplicableProduct  string
 	ValidFrom          time.Time
 	ValidTill          time.Time
-	MaxQuantity        int
+	Limited            bool // the number of coupons that can be issued
+	MaxQuantity        int  //only relevent if Limited is true
 	IsBound            bool
 	Expired            bool
 }
 
-// currently the coupon user has belongsto relationship to coupon
-// but shold also have a has many relation with user ? ? ?
 type UserCoupon struct {
 	gorm.Model
 	UserID     uint

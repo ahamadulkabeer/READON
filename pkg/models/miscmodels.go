@@ -43,3 +43,10 @@ type TopTenCategory struct {
 	CategoryName string
 	TotalSales   int
 }
+
+type UserDataError struct {
+	UserNameErr string
+	EmailErr    string
+	PasswordErr string
+	GeneralErr  string
+}

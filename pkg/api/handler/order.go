@@ -22,17 +22,6 @@ func NewOrderHandler(usecase services.OrderUseCase) *OrderHAndler {
 	}
 }
 
-// @Summary Add an order
-// @Description Place an order for a user with specified details.
-// @Tags order
-// @Produce json
-// @Param userid query int true "User ID"
-// @Param paymentmethoadid query int true "Payment Method ID"
-// @Param adressid query int true "Address ID"
-// @Success 200 {string} string "Order placed"
-// @Failure 400 {object} models.ErrorResponse
-// @Failure 500 {object} models.ErrorResponse
-// @Router /user/addorder [post]
 func (cr OrderHAndler) AddOrder(c *gin.Context) {
 	PaymentMethoadIdstr := c.Query("paymentMethodId")
 	addressidstr := c.Query("addressId")
@@ -82,16 +71,6 @@ func (cr OrderHAndler) RetryOrder(c *gin.Context) {
 	c.JSON(response.StatusCode, response)
 }
 
-// @Summary Cancel an order
-// @Description Cancel an order for a user with specified details.
-// @Tags order
-// @Produce json
-// @Param userid query int true "User ID"
-// @Param orderid query int true "Order ID"
-// @Success 200 {string} string "Order cancelled"
-// @Failure 400 {object} models.ErrorResponse
-// @Failure 500 {object} models.ErrorResponse
-// @Router /user/cancelorder [delete]
 func (cr OrderHAndler) CancelOrder(c *gin.Context) {
 
 	orderIdStr := c.Param("orderId")
@@ -106,16 +85,6 @@ func (cr OrderHAndler) CancelOrder(c *gin.Context) {
 	c.JSON(response.StatusCode, response)
 }
 
-// @Summary Get order details
-// @Description Retrieve details of a specific order for a user.
-// @Tags order
-// @Produce json
-// @Param userid query int true "User ID"
-// @Param orderid query int true "Order ID"
-// @Success 200 {object} models.OrdersListing "Order details"
-// @Failure 400 {object} models.ErrorResponse
-// @Failure 500 {object} models.ErrorResponse
-// @Router /user/getorder [get]
 func (cr OrderHAndler) GetOrder(c *gin.Context) {
 	orderIdStr := c.Param("orderId")
 	orderID, err := strconv.Atoi(orderIdStr)
@@ -129,15 +98,6 @@ func (cr OrderHAndler) GetOrder(c *gin.Context) {
 	c.JSON(response.StatusCode, response)
 }
 
-// @Summary list a users orders
-// @Description Retrieve all orders for a user.
-// @Tags order
-// @Produce json
-// @Param userid query int true "User ID"
-// @Success 200 {object} []models.OrdersListing "Order details"
-// @Failure 400 {object} models.ErrorResponse
-// @Failure 500 {object} models.ErrorResponse
-// @Router /user/listorder [get]
 func (cr OrderHAndler) ListOrders(c *gin.Context) {
 
 	var pageDetails models.Pagination
@@ -154,15 +114,6 @@ func (cr OrderHAndler) ListOrders(c *gin.Context) {
 	c.JSON(response.StatusCode, response)
 }
 
-// @Summary Get all orders
-// @Description Retrieve all orders based on a filter.
-// @Tags order
-// @Produce json
-// @Param filter query int true "Filter parameter"
-// @Success 200 {array} []models.OrdersListing "List of orders"
-// @Failure 400 {object} models.ErrorResponse
-// @Failure 500 {object} models.ErrorResponse
-// @Router /admin/allorders [get]
 func (cr OrderHAndler) GetAllOrders(c *gin.Context) {
 	var pageDetails models.Pagination
 

@@ -15,13 +15,8 @@ func HashPassword(password string) (string, error) {
 	return string(hashedPassword), nil
 }
 
-func AuthenticatePassword(passwordStr, inputPassword string) (bool, error) {
-	password := make([]byte, len(passwordStr))
-	for i, x := range passwordStr {
-		password[i] = byte(x)
-	}
-	fmt.Println(passwordStr == string(password))
-	err := bcrypt.CompareHashAndPassword(password, []byte(inputPassword))
+func AuthenticatePassword(password, inputPassword string) (bool, error) {
+	err := bcrypt.CompareHashAndPassword([]byte(password), []byte(inputPassword))
 	if err != nil {
 		fmt.Println("Password does not match")
 		return false, err

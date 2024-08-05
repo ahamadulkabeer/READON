@@ -37,16 +37,26 @@ func (c CartDatabase) DeleteItem(userID, bookID int) error {
 	return nil
 }
 
+func (c CartDatabase) GetItem(bookID uint) (domain.Cart, error) {
+	var cartItem domain.Cart
+
+	err := c.DB.Where("book_id = ?", bookID).Preload("Book").Preload("Book.Category").First(&cartItem).Error
+	if err != nil {
+		return domain.Cart{}, nil
+	}
+	return cartItem, nil
+}
+
 func (c CartDatabase) GetItems(userID int) ([]domain.Cart, error) {
 	var list []domain.Cart
 	err := c.DB.Model(&domain.Cart{}).Where("user_id = ?", userID).Preload("Book").Preload("Book.Category").Find(&list).Error
 	if err != nil {
-		return list, err
+		return []domain.Cart{}, err
 	}
 	return list, err
 }
 
-func (c CartDatabase) CheckForItem(userID, bookID int) (int, error) {
+func (c CartDatabase) GetItemQuantity(userID, bookID int) (int, error) {
 	var qty int64
 	err := c.DB.Model(&domain.Cart{}).Select("quantity").Where("user_id = ? AND book_id = ?", userID, bookID).Find(&qty).Error
 	if err != nil {
@@ -63,5 +73,3 @@ func (c CartDatabase) GetTotalCartPrice(userID int) (float64, error) {
 	}
 	return totalPrice, nil
 }
-
-// i say this is cart repo . but never once i used cart id :)

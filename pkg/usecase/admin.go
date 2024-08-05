@@ -43,7 +43,7 @@ func (cr *AdminUseCase) ListAdmins() responses.Response {
 	list, err := cr.adminRepo.ListAdmins()
 	if err != nil {
 		statusCode, _ := errorhandler.HandleDatabaseError(err)
-		return responses.ClientReponse(statusCode, "couldn't fetch list of admins", err, nil)
+		return responses.ClientReponse(statusCode, "couldn't fetch list of admins", err.Error(), nil)
 	}
 	return responses.ClientReponse(http.StatusOK, "admin list fetched successfully", nil, list)
 }
@@ -59,7 +59,7 @@ func (c AdminUseCase) ListUsers(pageDet models.Pagination) responses.Response {
 	users, numofresults, err := c.userRepo.ListUsers(pageDet)
 	if err != nil {
 		statusCode, _ := errorhandler.HandleDatabaseError(err)
-		return responses.ClientReponse(statusCode, "couldn't fetch list of users data", err, nil)
+		return responses.ClientReponse(statusCode, "couldn't fetch list of users data", err.Error(), nil)
 	}
 	// pageDet.Lastpage = numofresults / pageDet.Size
 	// if numofresults%pageDet.Size != 0 {
@@ -77,7 +77,7 @@ func (c *AdminUseCase) FindByID(id uint) responses.Response {
 	user, err := c.userRepo.FindByID(id)
 	if err != nil {
 		statusCode, _ := errorhandler.HandleDatabaseError(err)
-		return responses.ClientReponse(statusCode, "couldn't fetch user data", err, nil)
+		return responses.ClientReponse(statusCode, "couldn't fetch user data", err.Error(), nil)
 	}
 	return responses.ClientReponse(http.StatusOK, "user data fetched successfully", nil, user)
 }
@@ -86,7 +86,7 @@ func (c *AdminUseCase) Delete(user domain.User) responses.Response {
 	err := c.userRepo.DeleteUser(user)
 	if err != nil {
 		statusCode, _ := errorhandler.HandleDatabaseError(err)
-		return responses.ClientReponse(statusCode, "couldn't delete user", err, nil)
+		return responses.ClientReponse(statusCode, "couldn't delete user", err.Error(), nil)
 	}
 	return responses.ClientReponse(http.StatusOK, "user deleted successfully", nil, nil)
 }
@@ -95,7 +95,7 @@ func (c *AdminUseCase) BlockOrUnBlock(id int) responses.Response {
 	status, err := c.userRepo.BlockOrUnBlock(id)
 	if err != nil {
 		statusCode, _ := errorhandler.HandleDatabaseError(err)
-		return responses.ClientReponse(statusCode, "couldn't update user permission", err, nil)
+		return responses.ClientReponse(statusCode, "couldn't update user permission", err.Error(), nil)
 	}
 
 	return responses.ClientReponse(http.StatusOK, "user permission updated ", nil, map[string]any{

@@ -1,7 +1,6 @@
 package http
 
 import (
-	"net/http"
 	"os"
 
 	"github.com/gin-contrib/cors"
@@ -30,29 +29,16 @@ func NewServerHTTP(userHandler *handler.UserHandler,
 	engine := gin.New()
 	engine.Use(cors.Default())
 	engine.Use(gin.Logger()) // Use logger from Gin
-	//engine.LoadHTMLGlob("pkg/templates/*.html") // parse template
+
+	// parse template
 	templatePath := os.Getenv("CONFIG_PATH")
 	if templatePath == "" {
 		templatePath = "./pkg/templates/*.html"
 	}
 	engine.LoadHTMLGlob(templatePath)
-	engine.GET("/", func(ctx *gin.Context) {
-		if ctx.GetHeader("Accept") == "application/json" {
-			ctx.JSON(http.StatusOK, gin.H{
-				"data": "foo",
-			})
-			return
-		}
-		ctx.HTML(http.StatusOK, "index", nil)
-
-	})
-
-	//to dowload invoice form browser without cookie authorisation :)
-	engine.GET("/invoice/:orderId", orderHandler.DownloadInvoice)
 
 	// Swagger docs
 	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
-	//
 
 	//user login / sign up
 	engine.GET("/signup", userHandler.GetSignup)
@@ -68,20 +54,26 @@ func NewServerHTTP(userHandler *handler.UserHandler,
 	engine.POST("/adminlogin", adminHandler.Login)
 
 	//categories
-	engine.GET("/categories", categoryHandler.ListCategories) //
-	//book
-	engine.GET("/books/:bookId", productHandler.GetProduct)  // ? not all book is getting ??
-	engine.GET("/books", productHandler.ListProductsForUSer) //
-	//home
-	engine.GET("/home", userHandler.UserHome, productHandler.ListProducts) ///
-	//web hook reciever (razor pay)
-	engine.POST("/payment/verify", orderHandler.VerifyPayment) ///
+	engine.GET("/categories", categoryHandler.ListCategories)
 
-	users := engine.Group("/user", middleware.UserAuthorizationMiddleware)
+	//book
+	engine.GET("/books/:bookId", productHandler.GetProduct) // ? not all book is getting ??
+	engine.GET("/books", productHandler.ListProductsForUSer)
+
+	//home
+	engine.GET("/home", userHandler.UserHome, productHandler.ListProducts)
+
+	//web hook reciever (razor pay)
+	engine.POST("/payment/verify", orderHandler.VerifyPayment)
+
+	//to dowload invoice form browser without cookie authorisation :)
+	engine.GET("/invoice/:orderId", orderHandler.DownloadInvoice)
+
+	users := engine.Group("/users", middleware.UserAuthorizationMiddleware)
 	{
 		users.DELETE("/account", userHandler.DeleteUserAccount) //
 		users.GET("/profile", userHandler.GetUserProfile)       //
-		users.PUT("/profile", userHandler.UpdateUser)           ///
+		users.PUT("/profile", userHandler.UpdateUser)
 
 		// cart
 		users.POST("/cart", cartHandler.AddToCart)        //
@@ -95,11 +87,13 @@ func NewServerHTTP(userHandler *handler.UserHandler,
 		users.GET("/orders", orderHandler.ListOrders)                 //
 		users.POST("/orders/:orderId/retry", orderHandler.RetryOrder) //
 		// address
-		users.POST("/addresses", addressHandler.AddAddress)                 //
-		users.PUT("/addresses/:addressId", addressHandler.UpdateAddress)    //
-		users.DELETE("/addresses/:addressId", addressHandler.DeleteAddress) //
-		users.GET("/addresses/:addressId", addressHandler.GetAddress)       //
-		users.GET("addresses", addressHandler.ListAddress)                  //
+		users.POST("/addresses", addressHandler.AddAddress)
+		users.PUT("/addresses/:addressId", addressHandler.UpdateAddress)
+		users.DELETE("/addresses/:addressId", addressHandler.DeleteAddress)
+		users.GET("/addresses/:addressId", addressHandler.GetAddress)
+		users.GET("addresses", addressHandler.ListAddress)
+		//coupons
+		users.GET("/coupons", couponHandler.ListCouponsbyUser) // get users all coupon
 		//invoice
 		users.GET("/invoice/:orderId", orderHandler.DownloadInvoice)
 	}
@@ -129,11 +123,10 @@ func NewServerHTTP(userHandler *handler.UserHandler,
 		admin.PUT("/categories/:categoryId", categoryHandler.UpdateCategory)    //
 		admin.DELETE("/categories/:categoryId", categoryHandler.DeleteCategory) //
 		//coupon
-		engine.POST("/coupon", couponHandler.CreateNewCoupon)
-		engine.DELETE("/coupon/:id", couponHandler.DeleteCoupon)
-		engine.GET("/coupon/all", couponHandler.ListAllCoupon)
-		engine.POST("/user/:userId/coupon/:couponId", couponHandler.IssueCouponToUser)
-		engine.GET("/coupon/:userId", couponHandler.ListCouponsbyUser) // get users all coupon
+		engine.POST("/coupons", couponHandler.CreateNewCoupon)
+		engine.DELETE("/coupons/:id", couponHandler.DeleteCoupon)
+		engine.GET("/coupons", couponHandler.ListAllCoupon)
+		engine.POST("/users/:userId/coupons/:couponId", couponHandler.IssueCouponToUser)
 
 	}
 

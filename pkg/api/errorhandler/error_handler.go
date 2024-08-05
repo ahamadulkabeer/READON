@@ -8,16 +8,6 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-type ErrorData struct {
-	Code         int
-	Message      string
-	ErrorMessage error
-}
-
-func (e ErrorData) Error() string {
-	return e.Message
-}
-
 func HandleDatabaseError(err error) (int, error) {
 	// log the database error
 	logError(err)
