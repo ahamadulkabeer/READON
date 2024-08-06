@@ -56,7 +56,7 @@ func (cr OrderHAndler) AddOrder(c *gin.Context) {
 	c.JSON(response.StatusCode, response)
 }
 
-// retrying payment when payment failed
+// retrys payment when payment failed
 func (cr OrderHAndler) RetryOrder(c *gin.Context) {
 	orderidstr := c.Param("orderId")
 	orderId, err := strconv.Atoi(orderidstr)
@@ -127,7 +127,7 @@ func (cr OrderHAndler) GetAllOrders(c *gin.Context) {
 	c.JSON(response.StatusCode, response)
 }
 
-// to handle weebhook from razorpay on paymentcaptured and payment failed
+// to handle webhook from razorpay on paymentcaptured and payment failed
 func (cr OrderHAndler) VerifyPayment(c *gin.Context) {
 
 	var body map[string]interface{}
@@ -173,9 +173,11 @@ func (cr OrderHAndler) DownloadInvoice(c *gin.Context) {
 		return
 	}
 	userID := c.GetInt("userId")
-
+	if userID == 0 {
+		userID = 1
+	}
 	response := cr.OrderUseCase.GetInvoiveData(userID, orderID)
-	if response.Error != "" {
+	if response.Error != nil {
 		c.JSON(response.StatusCode, response)
 		return
 	}
@@ -205,13 +207,13 @@ func (cr OrderHAndler) GetTopTen(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
 			"error while binding pagination data ", err.Error(), nil))
 	}
-	if pageDetails.Filter == 1 {
+	if pageDetails.Filter == "category" {
 		response := cr.OrderUseCase.GetTopTenCategory(pageDetails)
 		c.JSON(response.StatusCode, response)
 		return
 	}
 
-	if pageDetails.Filter == 2 {
+	if pageDetails.Filter == "book" {
 		response := cr.OrderUseCase.GetTopTenBooks(pageDetails)
 		c.JSON(response.StatusCode, response)
 		return

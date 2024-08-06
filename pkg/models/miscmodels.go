@@ -24,7 +24,7 @@ type InvoiceData struct {
 	Address        domain.Address
 	Order          domain.Order
 	Date           string
-	OrderItems     []OrderItemsListing
+	OrderItems     []ListOrderItems
 	GST            float64
 	Total          float64
 }

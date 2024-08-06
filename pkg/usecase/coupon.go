@@ -108,7 +108,11 @@ func (c CouponUsecase) ListAllCoupon(pageDet models.Pagination) responses.Respon
 	// responses
 	var coupons []models.ListCoupons
 	copier.Copy(&coupons, &list)
-	return responses.ClientReponse(http.StatusOK, "coupon returived successfully", nil, models.PaginatedListCoupons{coupons, pageDet})
+
+	return responses.ClientReponse(http.StatusOK, "coupon returived successfully", nil, models.PaginatedListCoupons{
+		Coupons:    coupons,
+		Pagination: pageDet,
+	})
 }
 
 func (c CouponUsecase) IssueCoupon(userID, couponID uint) responses.Response {

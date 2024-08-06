@@ -2,7 +2,6 @@ package repository
 
 import (
 	"fmt"
-	"log"
 	"readon/pkg/domain"
 	"readon/pkg/models"
 	interfaces "readon/pkg/repository/interface"
@@ -23,32 +22,24 @@ func NewProductRepository(DB *gorm.DB) interfaces.ProductRepository {
 	}
 }
 
-func (c *productDatabase) ListProducts() ([]models.ListingBook, error) {
-	var list []models.ListingBook
+// func (c *productDatabase) ListProducts() ([]models.ListBook, error) {
+// 	var list []models.ListBook
 
-	db := c.DB.Table("books").Select("books.id AS book_id, books.title, books.author, books.about, books.rating, books.premium,categories.id AS category_id,categories.name AS category_name").
-		Joins("JOIN categories ON books.category_id = categories.id").
-		//Joins("JOIN bookcovers ON books.id = bookcovers.book_id").
-		Find(&list) //.Limit(8)
-	fmt.Println("list :", list)
-	return list, db.Error
-}
+// 	db := c.DB.Table("books").Select("books.id AS book_id, books.title, books.author, books.about, books.rating, books.premium,categories.id AS category_id,categories.name AS category_name").
+// 		Joins("JOIN categories ON books.category_id = categories.id").
+// 		//Joins("JOIN bookcovers ON books.id = bookcovers.book_id").
+// 		Find(&list) //.Limit(8)
+// 	return list, db.Error
+// }
 
-func (c *productDatabase) ListProductsForUser(pageDet models.Pagination, offset int) ([]models.ListingBook, error) {
-	var list []models.ListingBook
-
-	log.Println("pagedat in repo", pageDet)
-	log.Println("offset :", offset)
-	//query := c.DB.Table("books").Select("id,title, author,rating").Where(" title ILIKE  ? ", fmt.Sprintf("%%%s%%", pageDet.Search))
-	query := c.DB.Table("books").Select("books.id AS book_id, books.title, books.author, books.about, books.rating, books.premium, books.price, categories.id AS category_id,categories.name AS category_name, bookcovers.image ").
-		Joins("JOIN categories ON books.category_id = categories.id").
-		Joins("JOIN (SELECT DISTINCT ON (book_id) * FROM bookcovers ORDER BY book_id, id) AS bookcovers ON bookcovers.book_id  = books.id")
-
+func (c *productDatabase) ListProductsForUser(pageDet models.Pagination, offset int) ([]domain.Book, error) {
+	var list []domain.Book
+	query := c.DB.Model(&domain.Book{}).Preload("Category")
 	if pageDet.Search != "" {
 		query = query.Where(" books.title ILIKE  ? ", fmt.Sprintf("%%%s%%", pageDet.Search))
 	}
 	// filter by category
-	if pageDet.Filter != 0 {
+	if pageDet.Filter != "" {
 		query = query.Where("books.category_id = ?", pageDet.Filter)
 	}
 
@@ -56,12 +47,6 @@ func (c *productDatabase) ListProductsForUser(pageDet models.Pagination, offset 
 	if err != nil {
 		return list, err
 	}
-	// for testing purpose
-	for i := range list {
-		list[i].Image = nil
-	}
-
-	//log.Println("list :", list)
 	return list, err
 }
 
@@ -69,7 +54,7 @@ func (c productDatabase) GetTotalNoOfproducts(pageDet models.Pagination) (int, e
 	var count int64
 
 	query := c.DB.Table("books").Select("id").Where(" title ILIKE  ? ", fmt.Sprintf("%%%s%%", pageDet.Search))
-	if pageDet.Filter != 0 {
+	if pageDet.Filter != "" {
 		query = query.Where("category_id = ?", pageDet.Filter)
 	}
 	err := query.Count(&count).Error
@@ -79,11 +64,13 @@ func (c productDatabase) GetTotalNoOfproducts(pageDet models.Pagination) (int, e
 	return int(count), err
 }
 
-func (c *productDatabase) AddProduct(product domain.Book) (int, error) {
+func (c *productDatabase) AddProduct(product *domain.Book) (int, error) {
 
-	err := c.DB.Create(&product).Error
-	fmt.Println("product id :", product.ID)
-	return int(product.ID), err
+	err := c.DB.Create(product).Error
+	if err != nil {
+		return 0, err
+	}
+	return int(product.ID), nil
 }
 
 func (c *productDatabase) EditProduct(product domain.Book) (domain.Book, error) {
@@ -98,25 +85,10 @@ func (c productDatabase) AddImage(image []byte, book_Id int) error {
 	return err
 }
 
-// func (c productDatabase) GetProduct(bookId int) (models.ListingBook, error) {
-// 	var book models.ListingBook
-// 	var err error
-// 	db := c.DB.Table("books").Select("books.id AS book_Id, books.title, books.author, books.about, books.rating, books.premium, books.price, categories").
-// 		Joins("JOIN categories ON books.category_id = categories.id").
-// 		Preload("BookCovers", "book_id = ?", bookId).
-// 		Where("books.id = ?", bookId).Find(&book)
-
-//		fmt.Println("rows affected ", db.RowsAffected, " bookid ", bookId)
-//		fmt.Println("error :", db.Error)
-//		if db.RowsAffected == 0 {
-//			err = errors.New("no record found")
-//		}
-//		return book, err
-//	}
 func (c productDatabase) GetProduct(BookID int) (domain.Book, error) {
 	var book domain.Book
 
-	err := c.DB.Model(&domain.Book{}).Where("id = ?", BookID).First(&book).Error
+	err := c.DB.Model(&domain.Book{}).Where("id = ?", BookID).Preload("Category").First(&book).Error
 	if err != nil {
 		return domain.Book{}, err
 	}
@@ -128,10 +100,28 @@ func (c productDatabase) DeleteProduct(book domain.Book) error {
 	return err
 }
 
-func (c productDatabase) ListBookCovers(bookId int) ([][]byte, error) {
-	var coverList [][]byte
-	err := c.DB.Table("bookcovers").Select("image").Where("book_id = ?", bookId).Find(&coverList).Error
+func (c productDatabase) ListBookCovers(bookId int) ([]domain.Bookcover, error) {
+	var coverList []domain.Bookcover
+	err := c.DB.Model(&domain.Bookcover{}).Where("book_id = ?", bookId).Find(&coverList).Error
 	return coverList, err
+}
+
+func (c productDatabase) GetBookCover(bookId int) (domain.Bookcover, error) {
+	var bookCover domain.Bookcover
+	err := c.DB.Model(&domain.Bookcover{}).Where("book_id = ?", bookId).First(&bookCover).Error
+	if err != nil {
+		return domain.Bookcover{}, err
+	}
+	return bookCover, nil
+}
+
+func (c productDatabase) GetNumberOfBookCovers(bookID uint) (int, error) {
+	var count int64
+	err := c.DB.Model(&domain.Bookcover{}).Where("book_id = ?", bookID).Count(&count).Error
+	if err != nil {
+		return 0, err
+	}
+	return int(count), nil
 }
 
 func (c productDatabase) GetPrice(bookId int) (float64, error) {

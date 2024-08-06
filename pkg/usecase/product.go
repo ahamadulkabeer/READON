@@ -1,7 +1,9 @@
 package usecase
 
 import (
-	"fmt"
+	"net/http"
+	"readon/pkg/api/errorhandler"
+	"readon/pkg/api/responses"
 	"readon/pkg/domain"
 	"readon/pkg/models"
 	interfaces "readon/pkg/repository/interface"
@@ -20,30 +22,55 @@ func NewProductUseCase(repo interfaces.ProductRepository) services.ProductUseCas
 	}
 }
 
-func (c ProductUseCase) ListProducts() ([]models.ListingBook, error) {
-	listofbooks, err := c.productRepo.ListProducts()
+// func (c ProductUseCase) ListProducts() responses.Response {
+// 	listofbooks, err := c.productRepo.ListProducts()
+// 	if err != nil {
+// 		statusCode, _ := errorhandler.HandleDatabaseError(err)
+// 		responses.ClientReponse(statusCode, "couldn't fetch list of books", err.Error(), nil)
+// 	}
+// 	return responses.ClientReponse(http.StatusOK, "list of books fetched", nil, listofbooks)
+// }
 
-	return listofbooks, err
-}
+func (c ProductUseCase) ListProductsForUser(pageDet *models.Pagination) responses.Response {
 
-func (c ProductUseCase) ListProductsForUser(pageDet *models.Pagination) ([]models.ListingBook, error) {
-	pageDet.Size = 5
-
-	offset := pageDet.Size * (pageDet.NewPage - 1)
-	numOfResults, err := c.productRepo.GetTotalNoOfproducts(*pageDet)
+	// pagination details
+	pageDet.Size = 6
+	offset := pageDet.Size * (pageDet.Page - 1)
+	var err error
+	pageDet.NumberOfResults, err = c.productRepo.GetTotalNoOfproducts(*pageDet)
 	if err != nil {
-		return nil, err
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't fetch list of books", err.Error(), nil)
 	}
+
 	// populating book details in a slice of models.listingbook object
-	listofbooks, err := c.productRepo.ListProductsForUser(*pageDet, offset)
-	pageDet.Lastpage = numOfResults / pageDet.Size
-	if numOfResults%pageDet.Size != 0 {
-		pageDet.Lastpage++
+	listOfBooks, err := c.productRepo.ListProductsForUser(*pageDet, offset)
+	if err != nil {
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't fetch list of books", err.Error(), nil)
 	}
-	return listofbooks, err
+
+	var ListOfBookList []models.ListBook
+	copier.Copy(&ListOfBookList, &listOfBooks)
+
+	// fetch book cover
+	// for i := range ListOfBookList {
+	// 	bookCover, err := c.productRepo.GetBookCover(ListOfBookList[i].ID)
+	// 	if err != nil {
+	// 		statusCode, _ := errorhandler.HandleDatabaseError(err)
+	// 		return responses.ClientReponse(statusCode, "couldn't fetch list of books", err.Error(), nil)
+	// 	}
+	// 	ListOfBookList[i].Image = bookCover.Image
+	// }
+
+	//response
+	return responses.ClientReponse(http.StatusOK, " list of books fetched", nil, models.PaginatedListBooks{
+		Books:      ListOfBookList,
+		Pagination: *pageDet,
+	})
 }
 
-func (c ProductUseCase) Addproduct(pdct models.Product) (addbookerr, addimgerr error) {
+func (c ProductUseCase) Addproduct(pdct models.Product) responses.Response {
 	var product = domain.Book{
 		Title:      pdct.Title,
 		Author:     pdct.Author,
@@ -52,22 +79,40 @@ func (c ProductUseCase) Addproduct(pdct models.Product) (addbookerr, addimgerr e
 		Price:      pdct.Price,
 	}
 
-	bookId, addbookerr := c.productRepo.AddProduct(product)
-	if addbookerr != nil {
-		return
+	// add product
+	bookId, err := c.productRepo.AddProduct(&product)
+	if err != nil {
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't add product ", err.Error(), nil)
 	}
-	addimgerr = c.productRepo.AddImage(pdct.Image, bookId)
-	return
+
+	// add image
+	err = c.productRepo.AddImage(pdct.Image, bookId)
+	if err != nil {
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "product added : couldn't add image ", err.Error(), nil)
+	}
+
+	// fetch the product
+	product, err = c.productRepo.GetProduct(int(product.ID))
+	if err != nil {
+		_, _ = errorhandler.HandleDatabaseError(err)
+	}
+
+	// response
+	var book models.ListBook
+	copier.Copy(&book, &product)
+	bookCover, err := c.productRepo.GetBookCover(int(product.ID))
+	if err != nil {
+		_, _ = errorhandler.HandleDatabaseError(err)
+	}
+	book.Image = bookCover.Image
+	return responses.ClientReponse(http.StatusOK, "product added ", nil, book)
 }
 
-func (c ProductUseCase) EditProduct(pdct models.ProductUpdate) (models.ProductUpdate, error) {
+func (c ProductUseCase) EditProduct(pdct models.ProductUpdate) responses.Response {
 
-	/*oproduct, err := c.productRepo.GetProduct(pdct.Id)
-	if err != nil {
-		return pdct, err
-	}
-	fmt.Println("oprodect :", oproduct)*/
-
+	//initilise the book object
 	var product = domain.Book{
 		Title:      pdct.Name,
 		Author:     pdct.Author,
@@ -76,36 +121,124 @@ func (c ProductUseCase) EditProduct(pdct models.ProductUpdate) (models.ProductUp
 		Price:      pdct.Price,
 	}
 	product.ID = uint(pdct.ID)
-	fmt.Println("product category id :", product.CategoryID)
-	product, err := c.productRepo.EditProduct(product)
-	copier.Copy(&pdct, &product)
-	return pdct, err
 
-}
-
-func (c ProductUseCase) GetProduct(bookId int) (domain.Book, error) {
-	return c.productRepo.GetProduct(bookId)
-}
-
-func (c ProductUseCase) AddBookCover(image []byte, bookId int) error {
-	_, err := c.productRepo.GetProduct(bookId)
+	// edit product
+	_, err := c.productRepo.EditProduct(product)
 	if err != nil {
-		return err
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't edit product ", err.Error(), nil)
 	}
-	return c.productRepo.AddImage(image, bookId)
+
+	// fetch the product
+	product, err = c.productRepo.GetProduct(int(product.ID))
+	if err != nil {
+		_, _ = errorhandler.HandleDatabaseError(err)
+	}
+
+	// response
+	var book models.ListBook
+	copier.Copy(&book, &product)
+	bookCover, err := c.productRepo.GetBookCover(int(product.ID))
+	if err != nil {
+		_, _ = errorhandler.HandleDatabaseError(err)
+	}
+	book.Image = bookCover.Image
+	return responses.ClientReponse(http.StatusOK, "product edited", nil, book)
 }
 
-func (c ProductUseCase) DeleteProduct(bookID int) error {
-	listingbook, err := c.productRepo.GetProduct(bookID)
+func (c ProductUseCase) GetProduct(bookId int) responses.Response {
+	book, err := c.productRepo.GetProduct(bookId)
 	if err != nil {
-		return err
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't fetch product ", err.Error(), nil)
 	}
-	var book domain.Book
-	copier.Copy(&book, listingbook)
+
+	// response
+	var bookListing models.ListBook
+	copier.Copy(&bookListing, &book)
+	bookCover, err := c.productRepo.GetBookCover(bookId)
+	if err != nil {
+		_, _ = errorhandler.HandleDatabaseError(err)
+	}
+	bookListing.Image = bookCover.Image
+	return responses.ClientReponse(http.StatusOK, "book fetched", nil, bookListing)
+}
+
+func (c ProductUseCase) AddBookCover(image []byte, bookId int) responses.Response {
+
+	// check count of existins book covers
+	count, err := c.productRepo.GetNumberOfBookCovers(uint(bookId))
+	if err != nil {
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't add book cover ", err.Error(), nil)
+	}
+
+	if count >= 3 {
+		return responses.ClientReponse(http.StatusUnprocessableEntity, "couldn't add book cover ",
+			"can't have more than 3 book covers", nil)
+	}
+
+	// add book cover
+	err = c.productRepo.AddImage(image, bookId)
+	if err != nil {
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't add book cover ", err.Error(), nil)
+	}
+
+	// get product
+	book, err := c.productRepo.GetProduct(bookId)
+	if err != nil {
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't add book cover ", err.Error(), nil)
+	}
+
+	// response
+	var bookListing models.ListBook
+	copier.Copy(&bookListing, &book)
+	bookCover, err := c.productRepo.GetBookCover(bookId)
+	if err != nil {
+		_, _ = errorhandler.HandleDatabaseError(err)
+	}
+	bookListing.Image = bookCover.Image
+	return responses.ClientReponse(http.StatusOK, "image added", nil, bookListing)
+}
+
+func (c ProductUseCase) DeleteProduct(bookID int) responses.Response {
+
+	// get product
+	book, err := c.productRepo.GetProduct(bookID)
+	if err != nil {
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't delete product ", err.Error(), nil)
+	}
+
+	//response
+	var bookListing models.ListBook
+	copier.Copy(&bookListing, &book)
+	bookCover, err := c.productRepo.GetBookCover(bookID)
+	if err != nil {
+		_, _ = errorhandler.HandleDatabaseError(err)
+	}
+	bookListing.Image = bookCover.Image
+
+	// delete book
 	err = c.productRepo.DeleteProduct(book)
-	return err
+	if err != nil {
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't delete product ", err.Error(), nil)
+	}
+
+	return responses.ClientReponse(http.StatusOK, "product deleted", nil, bookListing)
 }
 
-func (c ProductUseCase) ListBookCovers(bookId int) ([][]byte, error) {
-	return c.productRepo.ListBookCovers(bookId)
+func (c ProductUseCase) ListBookCovers(bookId int) responses.Response {
+	bookCover, err := c.productRepo.ListBookCovers(bookId)
+	if err != nil {
+		statusCode, _ := errorhandler.HandleDatabaseError(err)
+		return responses.ClientReponse(statusCode, "couldn't fetch  book covers ", err.Error(), nil)
+	}
+	// response
+	var bookCoverListing []models.ListBookCover
+	copier.Copy(&bookCoverListing, &bookCover)
+	return responses.ClientReponse(http.StatusOK, "book covers fetched ", nil, bookCoverListing)
 }

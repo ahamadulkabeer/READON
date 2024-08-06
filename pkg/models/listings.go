@@ -5,7 +5,15 @@ import (
 	"time"
 )
 
-type ListingBook struct {
+type Pagination struct {
+	Filter          string `json:"filter" form:"filter"`
+	Search          string `json:"search" form:"search"`
+	Size            int    `json:"size" form:"size"`
+	Page            int    `json:"page" form:"page"`
+	NumberOfResults int    `json:"numberOfResults" form:"numberOfResults"`
+}
+
+type ListBook struct {
 	ID       int
 	Title    string
 	Author   string
@@ -30,22 +38,13 @@ type Admin struct {
 	Email string `json:"email" copier:"must"`
 }
 
-type Pagination struct {
-	Size     int    `json:"size" form:"size"`
-	Filter   int    `json:"filter" form:"filter"`
-	NewPage  int    `json:"page" form:"page"`
-	Search   string `json:"search" form:"search"`
-	Offset   int    `json:"offset" form:"offset"`
-	Lastpage int    `json:"lastpage" form:"lastpage"`
-}
-
 type UserlistResponse struct {
 	Pagination
 	List []domain.User
 }
 type BooksListResponse struct {
 	Pagination
-	List []ListingBook
+	List []ListBook
 }
 
 type ListCartItem struct {
@@ -54,7 +53,7 @@ type ListCartItem struct {
 	Quantity   int
 	Price      float64
 	TotalPrice float64
-	Book       ListingBook
+	Book       ListBook
 }
 
 type ListCart struct {
@@ -77,25 +76,29 @@ type ListAddress struct {
 	Mobile    string
 }
 
-type OrdersListing struct {
+type ListOrders struct {
 	ID              uint `copier:"must"`
 	TotalQuantity   int
 	TotalPrice      float64
-	Items           []OrderItemsListing
+	DiscountedPrice float64
+	TotalDiscount   float64
+	DeleveryCharge  float64
+	Items           []ListOrderItems
 	PaymentMethodID uint
 	PaymentMethod   string
 	RazorPayOrderID string
 	PaymentStatus   string
 	PaymentID       string
+	AdressID        uint
 	Address         ListAddress
 	Status          string
 }
-type OrderItemsListing struct {
+type ListOrderItems struct {
 	BookID   int
-	Title    string
 	Price    float64
 	Quantity int
 	Total    float64
+	Book     ListBook
 }
 
 type ListCategories struct {
@@ -133,4 +136,21 @@ type ListCoupons struct {
 type PaginatedListCoupons struct {
 	Coupons    []ListCoupons
 	Pagination Pagination
+}
+
+type PaginatedListBooks struct {
+	Books      []ListBook
+	Pagination Pagination
+}
+
+type PaginatedListOrders struct {
+	Orders     []ListOrders
+	Pagination Pagination
+}
+
+// for now
+
+type ListBookCover struct {
+	ID    uint
+	Image []byte
 }

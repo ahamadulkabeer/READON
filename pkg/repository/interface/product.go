@@ -6,16 +6,18 @@ import (
 )
 
 type ProductRepository interface {
-	ListProducts() ([]models.ListingBook, error)
-	ListProductsForUser(models.Pagination, int) ([]models.ListingBook, error)
+	//ListProducts() ([]models.ListBook, error)
+	ListProductsForUser(models.Pagination, int) ([]domain.Book, error)
 	GetTotalNoOfproducts(pageDet models.Pagination) (int, error)
-	AddProduct(product domain.Book) (int, error)
+	AddProduct(product *domain.Book) (int, error)
 	EditProduct(product domain.Book) (domain.Book, error)
 	AddImage([]byte, int) error
 	//GetProduct(bookID int) (models.ListingBook, error)
 	GetProduct(BookID int) (domain.Book, error)
 	DeleteProduct(domain.Book) error
 
-	ListBookCovers(bookId int) ([][]byte, error)
+	GetNumberOfBookCovers(bookID uint) (int, error)
+	GetBookCover(bookId int) (domain.Bookcover, error)
+	ListBookCovers(bookId int) ([]domain.Bookcover, error)
 	GetPrice(bookId int) (float64, error)
 }

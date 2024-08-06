@@ -103,7 +103,7 @@
                 <p><strong>Address:</strong>{{.CompanyAddress}}</p>
                 <p><strong>Contact:</strong>{{.CompanyContact}}</p>
             </div>
-            <p>Date : {{.Date}}</p>
+            <p><strong>Date :</strong> {{.Date}}</p>
             <div class="address-container">
                 <p><strong>Customer :</strong></p>
                 <div >
@@ -120,7 +120,7 @@
 
             <div class="product-list">
                 <h2>Products</h2>
-                <p>Order ID : {{.Order.ID}}</p>
+                <p><strong>Order ID : </strong>{{.Order.ID}}</p>
                 <table>
                     <thead>
                         <tr>
@@ -136,7 +136,7 @@
                         {{ range $index , $_ := .OrderItems}}
                         <tr>
                             <td>{{$index}}</td>
-                            <td>{{.Title}}</td>
+                            <td>{{.Book.Title}}</td>
                             <td>{{.Quantity}}</td>
                             <td>{{.Price}}</td>
                             <td>{{.Total}}</td>
@@ -150,11 +150,15 @@
                             <td>{{.Order.TotalPrice}}</td>
                         </tr>
                         <tr>
-                            <th colspan="4">Delivery Charge:</th>
+                            <th colspan="4">+ Delivery Charge:</th>
                             <td>{{.Order.DeleveryCharge}}</td>
                         </tr>
                         <tr>
-                            <th colspan="4">GST:</th>
+                            <th colspan="4">- Total Discount:</th>
+                            <td>{{.Order.TotalDiscount}}</td>
+                        </tr>
+                        <tr>
+                            <th colspan="4">+ GST:</th>
                             <td>{{.GST}}</td>
                         </tr>
                         <tr>

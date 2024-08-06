@@ -61,7 +61,7 @@ func NewServerHTTP(userHandler *handler.UserHandler,
 	engine.GET("/books", productHandler.ListProductsForUSer)
 
 	//home
-	engine.GET("/home", userHandler.UserHome, productHandler.ListProducts)
+	//engine.GET("/home", userHandler.UserHome, productHandler.ListProducts)
 
 	//web hook reciever (razor pay)
 	engine.POST("/payment/verify", orderHandler.VerifyPayment)
@@ -71,15 +71,15 @@ func NewServerHTTP(userHandler *handler.UserHandler,
 
 	users := engine.Group("/users", middleware.UserAuthorizationMiddleware)
 	{
-		users.DELETE("/account", userHandler.DeleteUserAccount) //
-		users.GET("/profile", userHandler.GetUserProfile)       //
+		users.DELETE("/account", userHandler.DeleteUserAccount)
+		users.GET("/profile", userHandler.GetUserProfile)
 		users.PUT("/profile", userHandler.UpdateUser)
 
 		// cart
-		users.POST("/cart", cartHandler.AddToCart)        //
-		users.GET("/cart", cartHandler.GetCart)           //
-		users.PUT("/cart", cartHandler.UpdateQuantity)    //
-		users.DELETE("/cart", cartHandler.DeleteFromCart) //
+		users.POST("/cart", cartHandler.AddToCart)
+		users.GET("/cart", cartHandler.GetCart)
+		users.PUT("/cart", cartHandler.UpdateQuantity)
+		users.DELETE("/cart", cartHandler.DeleteFromCart)
 		// order
 		users.POST("/orders", orderHandler.AddOrder)                  //
 		users.DELETE("/orders/:orderId", orderHandler.CancelOrder)    //
@@ -107,9 +107,9 @@ func NewServerHTTP(userHandler *handler.UserHandler,
 		//admins
 		admin.GET("/admins", adminHandler.ListAdmins) //
 		//books
-		admin.POST("/books", productHandler.Addproduct)                   //
-		admin.PUT("/books/:bookId", productHandler.EditProductDet)        //
-		admin.GET("/books", productHandler.ListProducts)                  //
+		admin.POST("/books", productHandler.Addproduct)            //
+		admin.PUT("/books/:bookId", productHandler.EditProductDet) //
+		//admin.GET("/books", productHandler.ListProducts)                  //
 		admin.DELETE("/books/:bookId", productHandler.DeleteProduct)      //
 		admin.POST("books/:bookId/cover", productHandler.AddBookCover)    //
 		admin.GET("/books/:bookId/covers", productHandler.ListBookCovers) //

@@ -63,11 +63,11 @@ func (c OrderDatabse) DeleteOrder(orderID, userID int) error {
 
 func (c OrderDatabse) ListOrders(UserId int, pageDetails models.Pagination) ([]domain.Order, error) {
 	var list []domain.Order
-	query := c.DB.Model(&domain.Order{}).Where("user_id = ? AND status != ?", UserId, "cancelled").Offset(pageDetails.Offset).Limit(pageDetails.Size)
-	if pageDetails.Filter == 1 {
+	query := c.DB.Model(&domain.Order{}).Where("user_id = ? AND status != ?", UserId, "cancelled").Offset(pageDetails.Size * (pageDetails.Page - 1)).Limit(pageDetails.Size)
+	if pageDetails.Filter == "success" {
 		query = query.Where("payment_status != ?", "failed")
 	}
-	if pageDetails.Filter == 2 {
+	if pageDetails.Filter == "failed" {
 		query = query.Where("payment_status = ?", "failed")
 	}
 	err := query.Find(&list).Error

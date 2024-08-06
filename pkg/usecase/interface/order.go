@@ -11,7 +11,7 @@ type OrderUseCase interface {
 	CancelOrder(userID, orderID int) responses.Response
 	ListOrders(userID int, pagination models.Pagination) responses.Response
 	GetOrder(userID, orderID int) responses.Response
-	GetAllOrders(filter int) responses.Response
+	GetAllOrders(filter string) responses.Response
 	VerifyPayment(paymentData models.PaymentVerificationData) responses.Response
 	//DeletefailedRazorOrder(userID int) error
 	GetInvoiveData(userID, orderID int) responses.Response

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"net/http"
+	"readon/pkg/api/errorhandler"
 	"readon/pkg/domain"
 	interfaces "readon/pkg/repository/interface"
 	"time"
@@ -24,17 +26,19 @@ func GenerateCouponCode(prefix string) string {
 	return prefix + string(code)
 }
 
-func CalculateCouponDiscount(coupenRepo interfaces.CouponRepository, couponCodes []string, cart *[]domain.Cart, order *domain.Order) (string, error) {
+// preparing data for calculation
+func CalculateCouponDiscount(coupenRepo interfaces.CouponRepository, couponCodes []string, cart *[]domain.Cart, order *domain.Order) (int, string, error) {
 
-	couponsAndDiscounts, message, err := mapCouponsAndDiscounts(couponCodes, coupenRepo, order)
+	statusCode, couponsAndDiscounts, message, err := mapCouponsAndDiscounts(couponCodes, coupenRepo, order)
 	if err != nil {
-		return message, err
+		return statusCode, message, err //
 	}
 	coupons := []domain.Coupon{}
 	for couponID := range couponsAndDiscounts {
 		coupon, err := coupenRepo.GetCouponByID(couponID)
 		if err != nil {
-			return "db err : couldnt retrieve coupon ", err
+			statusCode, err := errorhandler.HandleDatabaseError(err)
+			return statusCode, "db err : couldnt retrieve coupon ", err
 		}
 		coupons = append(coupons, coupon)
 
@@ -42,14 +46,15 @@ func CalculateCouponDiscount(coupenRepo interfaces.CouponRepository, couponCodes
 	TotalDiscount := calculateDiscoundFromCart(cart, &coupons)
 	order.DiscountedPrice = order.TotalPrice - TotalDiscount
 	order.TotalDiscount = TotalDiscount
-	return "", nil
+	return http.StatusOK, "", nil
 }
 
+// actual discount calculation
 func calculateDiscoundFromCart(cart *[]domain.Cart, coupons *[]domain.Coupon) float64 {
 	TotalDiscount := 0.0
 	for _, orderItem := range *cart {
 		for _, coupon := range *coupons {
-			if coupon.ApplicableOn == "general" || coupon.ApplicableOn == "" {
+			if coupon.ApplicableOn == "any" || coupon.ApplicableOn == "" {
 				TotalDiscount += calculateDiscound(&coupon, orderItem.Price)
 			} else if coupon.ApplicableOn == "category" && orderItem.Book.Category.Name == coupon.ApplicableCategory {
 				TotalDiscount += calculateDiscound(&coupon, orderItem.Price)
@@ -71,7 +76,8 @@ func calculateDiscound(coupon *domain.Coupon, price float64) float64 {
 	return discount
 }
 
-func mapCouponsAndDiscounts(couponCodes []string, coupenRepo interfaces.CouponRepository, order *domain.Order) (map[uint]float64, string, error) {
+// check for business logic breaches
+func mapCouponsAndDiscounts(couponCodes []string, coupenRepo interfaces.CouponRepository, order *domain.Order) (int, map[uint]float64, string, error) {
 
 	couponsAndDiscounts := make(map[uint]float64)
 
@@ -80,19 +86,19 @@ func mapCouponsAndDiscounts(couponCodes []string, coupenRepo interfaces.CouponRe
 		found, userCoupon, err := coupenRepo.UserHasCoupon(uint(order.UserID), couponCode)
 		fmt.Println("user Coupon :", userCoupon)
 		if err != nil {
-			fmt.Println("db err : ", err)
-			return map[uint]float64{}, "db error while searching coupon code", err
+			statusCode, err := errorhandler.HandleDatabaseError(err)
+			return statusCode, map[uint]float64{}, "db error while searching coupon code", err
 		}
 		if !found {
 			fmt.Println("coupon :", couponCode, "not found")
-			return map[uint]float64{}, "invalid coupon code ", err
+			return http.StatusNotFound, map[uint]float64{}, "invalid coupon code ", nil
 		}
 		if _, f := couponsAndDiscounts[userCoupon.CouponID]; f {
-			return map[uint]float64{}, "cant have duplicate coupons and same kind ", errors.New("can only apply same type of coupon once per order")
+			return http.StatusUnprocessableEntity, map[uint]float64{}, "cant have duplicate coupons and same kind ", errors.New("can only apply same type of coupon once per order")
 		}
 
 		couponsAndDiscounts[userCoupon.CouponID] = 0.0
 
 	}
-	return couponsAndDiscounts, "", nil
+	return http.StatusOK, couponsAndDiscounts, "", nil
 }

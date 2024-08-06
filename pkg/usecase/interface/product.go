@@ -1,17 +1,17 @@
 package interfaces
 
 import (
-	"readon/pkg/domain"
+	"readon/pkg/api/responses"
 	"readon/pkg/models"
 )
 
 type ProductUseCase interface {
-	ListProducts() ([]models.ListingBook, error)
-	ListProductsForUser(*models.Pagination) ([]models.ListingBook, error)
-	Addproduct(pdct models.Product) (error, error)
-	EditProduct(pdct models.ProductUpdate) (models.ProductUpdate, error)
-	AddBookCover(image []byte, book_id int) error
-	GetProduct(bookId int) (domain.Book, error)
-	DeleteProduct(int) error
-	ListBookCovers(bookId int) ([][]byte, error)
+	//ListProducts() responses.Response
+	ListProductsForUser(*models.Pagination) responses.Response
+	Addproduct(pdct models.Product) responses.Response
+	EditProduct(pdct models.ProductUpdate) responses.Response
+	AddBookCover(image []byte, book_id int) responses.Response
+	GetProduct(bookId int) responses.Response
+	DeleteProduct(int) responses.Response
+	ListBookCovers(bookId int) responses.Response
 }

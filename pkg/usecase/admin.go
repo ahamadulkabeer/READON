@@ -49,14 +49,13 @@ func (cr *AdminUseCase) ListAdmins() responses.Response {
 }
 
 func (c AdminUseCase) ListUsers(pageDet models.Pagination) responses.Response {
-	if pageDet.NewPage == 0 {
-		pageDet.NewPage = 1
+	if pageDet.Page == 0 {
+		pageDet.Page = 1
 	}
 	if pageDet.Size == 0 {
 		pageDet.Size = 5
 	}
-	pageDet.Offset = pageDet.Size * (pageDet.NewPage - 1)
-	users, numofresults, err := c.userRepo.ListUsers(pageDet)
+	users, _, err := c.userRepo.ListUsers(pageDet)
 	if err != nil {
 		statusCode, _ := errorhandler.HandleDatabaseError(err)
 		return responses.ClientReponse(statusCode, "couldn't fetch list of users data", err.Error(), nil)
@@ -65,12 +64,7 @@ func (c AdminUseCase) ListUsers(pageDet models.Pagination) responses.Response {
 	// if numofresults%pageDet.Size != 0 {
 	// 	pageDet.Lastpage++
 	// }
-	return responses.ClientReponse(http.StatusOK, "users data fetched successfully", nil, map[string]any{
-		"currentpage":     pageDet.NewPage,
-		"numberofresults": numofresults,
-		"pagesize":        5,
-		"data":            users,
-	})
+	return responses.ClientReponse(http.StatusOK, "users data fetched successfully", nil, users)
 }
 
 func (c *AdminUseCase) FindByID(id uint) responses.Response {

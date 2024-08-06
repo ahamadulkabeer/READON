@@ -26,8 +26,7 @@ func (c userDatabase) ListUsers(pageDet models.Pagination) ([]domain.User, int, 
 	var users []domain.User
 	var numOfResult int64
 	log.Println("pagedat in repo", pageDet)
-	log.Println("offset :", pageDet.Offset)
-	err := c.DB.Table("users").Select("id,name,email,permission").Where(" name ILIKE  ?", fmt.Sprintf("%%%s%%", pageDet.Search)).Offset(pageDet.Offset).Limit(pageDet.Size).Find(&users).Error
+	err := c.DB.Table("users").Select("id,name,email,permission").Where(" name ILIKE  ?", fmt.Sprintf("%%%s%%", pageDet.Search)).Offset(pageDet.Size * (pageDet.Page - 1)).Limit(pageDet.Size).Find(&users).Error
 	if err != nil {
 		return users, 0, err
 	}
