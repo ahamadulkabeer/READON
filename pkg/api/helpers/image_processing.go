@@ -78,8 +78,16 @@ func CropImage(imagetocrop []byte) ([]byte, error) {
 	return croppedImageData, nil
 }
 
+var outputFilePath string
+
+func LoadImagePath() {
+	outputFilePath = os.Getenv("IMAGE_PATH")
+	if outputFilePath == "" {
+		outputFilePath = "/home/kabeer/Projects/READON/img/cropped/"
+	}
+}
 func SaveCroppedImage(croppedImageData []byte) error {
-	outputFilePath := "/home/kabeer/Projects/READON/img/cropped/"
+
 	// Create or open the output file for writing
 	filename := "IMG" + time.Now().Format("2006-01-02_03-04-05PM") + ".jpeg"
 	outputFile, err := os.Create(outputFilePath + filename)

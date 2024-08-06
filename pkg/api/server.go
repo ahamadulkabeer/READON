@@ -31,7 +31,7 @@ func NewServerHTTP(userHandler *handler.UserHandler,
 	engine.Use(gin.Logger()) // Use logger from Gin
 
 	// parse template
-	templatePath := os.Getenv("CONFIG_PATH")
+	templatePath := os.Getenv("TEMPLATE_PATH")
 	if templatePath == "" {
 		templatePath = "./pkg/templates/*.html"
 	}

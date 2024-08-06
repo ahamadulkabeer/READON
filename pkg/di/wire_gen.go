@@ -85,5 +85,6 @@ func loadApikeys(cfg config.Config)error{
 	if err :=  helpers.SetSendgridConfig(cfg.SendgridApiKey); err != nil {
 		return err
 	}
+	
 	return nil
 }
