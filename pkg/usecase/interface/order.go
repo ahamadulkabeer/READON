@@ -19,4 +19,6 @@ type OrderUseCase interface {
 
 	GetTopTenCategory(filter models.Pagination) responses.Response
 	GetTopTenBooks(filter models.Pagination) responses.Response
+
+	GetDataForPaymentpage(orderID int) models.PaymentPageData
 }

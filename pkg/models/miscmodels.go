@@ -3,6 +3,8 @@ package models
 import (
 	"readon/pkg/domain"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 type PaymentVerificationData struct {
@@ -22,11 +24,11 @@ type InvoiceData struct {
 	CompanyAddress string
 	CompanyContact string
 	Address        domain.Address
-	Order          domain.Order
+	Order          ListOrders
 	Date           string
 	OrderItems     []ListOrderItems
 	GST            float64
-	Total          float64
+	Total          decimal.Decimal
 }
 
 type ChartData struct {
@@ -49,4 +51,11 @@ type UserDataError struct {
 	EmailErr    string
 	PasswordErr string
 	GeneralErr  string
+}
+
+type PaymentPageData struct {
+	RazorpayOrderID string
+	OrderID         uint
+	UserName        string
+	FinalPrice      float64
 }

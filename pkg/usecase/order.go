@@ -85,9 +85,9 @@ func (c OrderUseCase) CreateOrder(userID, addressID, PaymentMethodID int, coupon
 			return responses.ClientReponse(http.StatusUnprocessableEntity, "couln't place order",
 				errors.New("OrderExceedsLimit: Order amount exceeds the maximum allowed limit of 1000"), nil)
 		}
-		razorOrderID, err = MakeRazorpayPayment(order.TotalPrice)
+		razorOrderID, err = MakeRazorpayPayment(order.DiscountedPrice)
 		if err != nil {
-			return responses.ClientReponse(http.StatusInternalServerError, "couln't place order", errors.New("payment gatway error").Error(), nil)
+			return responses.ClientReponse(http.StatusInternalServerError, "couln't place order", errors.New("payment gate way error").Error(), nil)
 		}
 		order.PaymentStatus = "payment pending"
 		order.RazorPayOrderID = razorOrderID
@@ -223,7 +223,11 @@ func (c OrderUseCase) ListOrders(userID int, pageDetails models.Pagination) resp
 		if listOfOrders[ind].PaymentMethodID == 2 {
 			orderListing[ind].PaymentMethod = "Online Payment"
 		}
-
+		// rounding
+		orderListing[ind].TotalPrice = orderListing[ind].TotalPrice.Round(2)
+		orderListing[ind].DiscountedPrice = orderListing[ind].DiscountedPrice.Round(2)
+		orderListing[ind].TotalDiscount = orderListing[ind].TotalDiscount.Round(2)
+		orderListing[ind].DeleveryCharge = orderListing[ind].DeleveryCharge.Round(2)
 	}
 
 	// response
@@ -272,8 +276,9 @@ func LoadRazorpayConfig(key, secret string) error {
 }
 
 func MakeRazorpayPayment(Price float64) (string, error) {
+	fmt.Println("key ", razorpayKey, "  sec  ", razorpaySecret)
 
-	client := razorpay.NewClient(razorpayKey, razorpaySecret)
+	client := razorpay.NewClient(razorpaySecret, razorpayKey)
 	amountInPaise := Price * 100
 	orderData := map[string]interface{}{
 		"amount":          amountInPaise,
@@ -286,6 +291,7 @@ func MakeRazorpayPayment(Price float64) (string, error) {
 	// Create an order
 	order, err := client.Order.Create(orderData, nil)
 	if err != nil {
+		fmt.Println("err :::", err)
 		return "", err
 	}
 	orderID := order["id"].(string)
@@ -317,15 +323,16 @@ func (c OrderUseCase) GetInvoiveData(userID, orderID int) responses.Response {
 		CompanyAddress: "123 Main Street, City, Country",
 		CompanyContact: "+1 234 5678 910",
 	}
-	invoice.Date = invoice.Order.CreatedAt.Format("02-01-2006")
 
 	// fetch the order
 	var err error
-	invoice.Order, err = c.OrderRepo.GetOrder(userID, orderID)
+	order, err := c.OrderRepo.GetOrder(userID, orderID)
 	if err != nil {
 		statusCode, err := errorhandler.HandleDatabaseError(err)
 		return responses.ClientReponse(statusCode, "couldn't process the request", err.Error(), nil)
 	}
+	invoice.Date = order.CreatedAt.Format("02-01-2006")
+	copier.Copy(&invoice.Order, &order)
 
 	// fetch order items
 	orderItems, err := c.OrderRepo.ListOrderItems(orderID)
@@ -360,7 +367,10 @@ func (c OrderUseCase) GetInvoiveData(userID, orderID int) responses.Response {
 	}
 
 	// calculate further data
-	invoice.Total = invoice.Order.TotalPrice + invoice.Order.DeleveryCharge - invoice.Order.TotalDiscount
+	invoice.Order.TotalDiscount = invoice.Order.TotalDiscount.Round(2)
+	invoice.Total = invoice.Total.Add(invoice.Order.DiscountedPrice)
+	invoice.Total = invoice.Total.Add(invoice.Order.DeleveryCharge)
+	//invoice.Total = decimal.NewFromFloat(invoice.Order.TotalPrice + invoice.Order.DeleveryCharge - invoice.Order.TotalDiscount).Round(2)
 
 	return responses.ClientReponse(http.StatusOK, "invoice generated", nil, invoice)
 }
@@ -492,5 +502,20 @@ func (c OrderUseCase) MakeOrderResponse(order domain.Order) responses.Response {
 	if order.PaymentMethodID == 2 {
 		orderListing.PaymentMethod = "Online Payment"
 	}
+
 	return responses.ClientReponse(http.StatusOK, "order fetched", nil, orderListing)
+}
+
+func (c OrderUseCase) GetDataForPaymentpage(orderID int) models.PaymentPageData {
+	order, err := c.OrderRepo.GetOrder(1, orderID)
+	if err != nil {
+		fmt.Println("err occured : ", err.Error())
+		return models.PaymentPageData{}
+	}
+	return models.PaymentPageData{
+		RazorpayOrderID: order.RazorPayOrderID,
+		OrderID:         order.ID,
+		UserName:        order.User.Name,
+		FinalPrice:      order.TotalPrice,
+	}
 }

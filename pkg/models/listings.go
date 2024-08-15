@@ -3,6 +3,8 @@ package models
 import (
 	"readon/pkg/domain"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 type Pagination struct {
@@ -51,14 +53,14 @@ type ListCartItem struct {
 	ID         int
 	BookId     uint
 	Quantity   int
-	Price      float64
-	TotalPrice float64
+	Price      decimal.Decimal
+	TotalPrice decimal.Decimal
 	Book       ListBook
 }
 
 type ListCart struct {
 	TotalQuantity int
-	TotalPrice    float64
+	TotalPrice    decimal.Decimal
 	Items         []ListCartItem
 }
 
@@ -79,10 +81,10 @@ type ListAddress struct {
 type ListOrders struct {
 	ID              uint `copier:"must"`
 	TotalQuantity   int
-	TotalPrice      float64
-	DiscountedPrice float64
-	TotalDiscount   float64
-	DeleveryCharge  float64
+	TotalPrice      decimal.Decimal
+	DiscountedPrice decimal.Decimal
+	TotalDiscount   decimal.Decimal
+	DeleveryCharge  decimal.Decimal
 	Items           []ListOrderItems
 	PaymentMethodID uint
 	PaymentMethod   string

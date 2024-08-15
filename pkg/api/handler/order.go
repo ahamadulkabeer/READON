@@ -168,8 +168,8 @@ func (cr OrderHAndler) DownloadInvoice(c *gin.Context) {
 	orderIdStr := c.Param("orderId")
 	orderID, err := strconv.Atoi(orderIdStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, responses.RespondWithError(http.StatusBadRequest,
-			"error getting param : orderId", err.Error()))
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
+			"error getting param : orderId", err.Error(), nil))
 		return
 	}
 	userID := c.GetInt("userId")
@@ -218,5 +218,17 @@ func (cr OrderHAndler) GetTopTen(c *gin.Context) {
 		c.JSON(response.StatusCode, response)
 		return
 	}
+
+}
+
+func (cr OrderHAndler) MakePayment(c *gin.Context) {
+	orderID, err := strconv.Atoi(c.Param("orderId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,
+			"error parsing query data", err.Error(), nil))
+		return
+	}
+	data := cr.OrderUseCase.GetDataForPaymentpage(orderID)
+	c.HTML(200, "paymentpage.html", data)
 
 }

@@ -69,6 +69,9 @@ func NewServerHTTP(userHandler *handler.UserHandler,
 	//to dowload invoice form browser without cookie authorisation :)
 	engine.GET("/invoice/:orderId", orderHandler.DownloadInvoice)
 
+	//make paymet (no auth work for userID = 1)
+	engine.GET("/payment/:orderId", orderHandler.MakePayment)
+
 	users := engine.Group("/users", middleware.UserAuthorizationMiddleware)
 	{
 		users.DELETE("/account", userHandler.DeleteUserAccount)

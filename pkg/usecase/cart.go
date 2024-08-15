@@ -11,6 +11,7 @@ import (
 	services "readon/pkg/usecase/interface"
 
 	"github.com/jinzhu/copier"
+	"github.com/shopspring/decimal"
 )
 
 type CartUseCase struct {
@@ -82,7 +83,7 @@ func (c CartUseCase) AddItem(userId, bookId int) responses.Response {
 	//response with nessessary data
 	var cartItem models.ListCartItem
 	copier.Copy(&cartItem, &newCartItem)
-	cartItem.TotalPrice = cartItem.Price * float64(cartItem.Quantity)
+	cartItem.TotalPrice = decimal.NewFromFloat(newCartItem.Price * float64(cartItem.Quantity)).Round(2)
 	return responses.ClientReponse(http.StatusOK, "item added to cart", nil, cartItem)
 }
 
@@ -126,7 +127,7 @@ func (c CartUseCase) UpdateQty(userId, bookId, newQuantity int) responses.Respon
 	//response with nessessary data
 	var cartItem models.ListCartItem
 	copier.Copy(&cartItem, &newCartItem)
-	cartItem.TotalPrice = cartItem.Price * float64(cartItem.Quantity)
+	cartItem.TotalPrice = decimal.NewFromFloat(newCartItem.Price * float64(cartItem.Quantity)).Round(2)
 	return responses.ClientReponse(http.StatusOK, "item quantity updated", nil, cartItem)
 }
 
@@ -158,8 +159,9 @@ func (c CartUseCase) DeleteItem(userId, bookId int) responses.Response {
 	for _, x := range cartData {
 		var cartItem models.ListCartItem
 		copier.Copy(&cartItem, &x)
-		cartItem.TotalPrice = x.Price * float64(x.Quantity)
-		cart.TotalPrice += cartItem.TotalPrice
+		cartItem.TotalPrice = decimal.NewFromFloat(x.Price * float64(x.Quantity))
+		cart.TotalPrice = cart.TotalPrice.Add(cartItem.TotalPrice)
+
 		cart.TotalQuantity += cartItem.Quantity
 		cart.Items = append(cart.Items, cartItem)
 	}
@@ -184,11 +186,12 @@ func (c CartUseCase) GetCart(userId int) responses.Response {
 	for _, x := range cartData {
 		var cartItem models.ListCartItem
 		copier.Copy(&cartItem, &x)
-		cartItem.TotalPrice = x.Price * float64(x.Quantity)
-		cart.TotalPrice += cartItem.TotalPrice
+		cartItem.TotalPrice = decimal.NewFromFloat(x.Price * float64(x.Quantity))
+		cart.TotalPrice = cart.TotalPrice.Add(cartItem.TotalPrice)
 		cart.TotalQuantity += cartItem.Quantity
 		cart.Items = append(cart.Items, cartItem)
 	}
 
+	cart.TotalPrice = cart.TotalPrice.Add(decimal.NewFromFloat(1)).Round(2)
 	return responses.ClientReponse(http.StatusOK, "cart fetched successfully", nil, cart)
 }
