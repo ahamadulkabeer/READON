@@ -268,7 +268,7 @@ var razorpayKey, razorpaySecret string
 
 func LoadRazorpayConfig(key, secret string) error {
 	if key == "" || secret == "" {
-		return errors.New("the config data is empty")
+		return errors.New("the razorpay api key is missing")
 	}
 	razorpayKey = key
 	razorpaySecret = secret
