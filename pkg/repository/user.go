@@ -119,10 +119,18 @@ func (c userDatabase) VerifyOtp(otp string, email string) error {
 	var tocheck domain.Otp
 	result := c.DB.Where("otp = ? AND email = ? ", otp, email).Limit(1).Find(&tocheck)
 	if result.Error != nil {
-		return errors.New("error from db !!!")
+		return errors.New("error from db")
 	}
 	if result.RowsAffected == 0 {
 		return errors.New("otp not found ")
+	}
+	return nil
+}
+
+func (c userDatabase) AddToWallet(userID uint, amount float64) error {
+	err := c.DB.Model(domain.User{}).Where("user_id = ?", userID).Update("wallet", gorm.Expr("wallet + ?", amount)).Error
+	if err != nil {
+		return err
 	}
 	return nil
 }

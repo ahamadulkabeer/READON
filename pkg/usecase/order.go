@@ -23,19 +23,22 @@ type OrderUseCase struct {
 	AddressRepo interfaces.AddressRepository
 	ProductRepo interfaces.ProductRepository
 	CouponRepo  interfaces.CouponRepository
+	UserRepo    interfaces.UserRepository
 }
 
 func NewOrderUseCase(orepo interfaces.OrderRepository,
 	crepo interfaces.CartRepository,
 	arepo interfaces.AddressRepository,
 	prepo interfaces.ProductRepository,
-	coupRepo interfaces.CouponRepository) services.OrderUseCase {
+	coupRepo interfaces.CouponRepository,
+	UserRepo interfaces.UserRepository) services.OrderUseCase {
 	return &OrderUseCase{
 		OrderRepo:   orepo,
 		CartRepo:    crepo,
 		AddressRepo: arepo,
 		ProductRepo: prepo,
 		CouponRepo:  coupRepo,
+		UserRepo:    UserRepo,
 	}
 }
 
@@ -146,7 +149,8 @@ func (c OrderUseCase) CancelOrder(userID, orderID int) responses.Response {
 
 	if order.PaymentStatus == "paid" {
 		// send it to a queue for validation and appproval
-		// function to update walled
+		c.UserRepo.AddToWallet(order.UserID, order.DiscountedPrice)
+
 	}
 
 	err = c.OrderRepo.CancelOrder(orderID, userID)

@@ -62,7 +62,7 @@ func InitializeAPI(cfg config.Config) (*http.ServerHTTP, error) {
 	couponHandler := handler.NewCouponHandler(couponUseCase)
 
 	
-	orderUsecase := usecase.NewOrderUseCase(orderRepository,cartRepository,addressRepository,productRepository,couponRepository)
+	orderUsecase := usecase.NewOrderUseCase(orderRepository,cartRepository,addressRepository,productRepository,couponRepository,userRepository)
 	orderHandler := handler.NewOrderHandler(orderUsecase)
 
 	

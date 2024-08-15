@@ -18,4 +18,5 @@ type UserRepository interface {
 	CheckForEmail(email string) (bool, error)
 	SaveOtp(string, string) error
 	VerifyOtp(string, string) error
+	AddToWallet(userID uint, amount float64) error
 }
