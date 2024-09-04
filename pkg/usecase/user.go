@@ -190,17 +190,17 @@ func (c userUseCase) DeleteUserAccount(id int) responses.Response {
 }
 
 func (c userUseCase) VerifyAndSendOtp(email string) responses.Response {
-	exist, err := c.userRepo.CheckForEmail(email)
-	if err != nil {
-		statusCode, _ := errorhandler.HandleDatabaseError(err)
-		return responses.ClientReponse(statusCode,
-			"error finding email : otp not sent ", err.Error(), nil)
-	}
-	if !exist {
-		statusCode, _ := errorhandler.HandleDatabaseError(err)
-		return responses.ClientReponse(statusCode,
-			"no account found on email , please try again", "no account found", nil)
-	}
+	// exist, err := c.userRepo.CheckForEmail(email)
+	// if err != nil {
+	// 	statusCode, _ := errorhandler.HandleDatabaseError(err)
+	// 	return responses.ClientReponse(statusCode,
+	// 		"error finding email : otp not sent ", err.Error(), nil)
+	// }
+	// if !exist {
+	// 	statusCode, _ := errorhandler.HandleDatabaseError(err)
+	// 	return responses.ClientReponse(statusCode,
+	// 		"no account found on email , please try again", "no account found", nil)
+	// }
 	otp, err := helpers.GenerateAndSendOpt(email)
 	fmt.Println("otp   : ", otp)
 	if err != nil {

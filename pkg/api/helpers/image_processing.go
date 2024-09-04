@@ -104,6 +104,6 @@ func SaveCroppedImage(croppedImageData []byte) error {
 		return err
 	}
 
-	fmt.Println("Cropped image saved as", outputFilePath)
+	fmt.Println("Cropped image saved as", outputFile)
 	return nil
 }

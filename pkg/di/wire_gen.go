@@ -82,9 +82,8 @@ func loadApikeys(cfg config.Config)error{
 	if err := usecase.LoadRazorpayConfig(cfg.RazorpayKey,cfg.RazorpaySecret); err != nil {
 		return err
 	}
-	if err :=  helpers.SetSendgridConfig(cfg.SendgridApiKey); err != nil {
+	if err :=  helpers.SetEmailConfig(cfg.EmailjetApiKey,cfg.EmailjetSecretKey); err != nil {
 		return err
 	}
-	
 	return nil
 }

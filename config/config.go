@@ -9,18 +9,19 @@ import (
 )
 
 type Config struct {
-	DBHost         string `mapstructure:"DB_HOST"`
-	DBName         string `mapstructure:"DB_NAME"`
-	DBUser         string `mapstructure:"DB_USER"`
-	DBPort         string `mapstructure:"DB_PORT"`
-	DBPassword     string `mapstructure:"DB_PASSWORD"`
-	RazorpayKey    string `mapstructure:"RAZORPAY_SECRET"`
-	RazorpaySecret string `mapstructure:"RAZORPAY_KEY"`
-	SendgridApiKey string `mapstructure:"SENDGRID_API_KEY"`
+	DBHost            string `mapstructure:"DB_HOST"`
+	DBName            string `mapstructure:"DB_NAME"`
+	DBUser            string `mapstructure:"DB_USER"`
+	DBPort            string `mapstructure:"DB_PORT"`
+	DBPassword        string `mapstructure:"DB_PASSWORD"`
+	RazorpayKey       string `mapstructure:"RAZORPAY_SECRET"`
+	RazorpaySecret    string `mapstructure:"RAZORPAY_KEY"`
+	EmailjetApiKey    string `mapstructure:"EMAILJET_KEY"`
+	EmailjetSecretKey string `mapstructure:"EMAILJET_SECRET"`
 }
 
 var envs = []string{
-	"DB_HOST", "DB_NAME", "DB_USER", "DB_PORT", "DB_PASSWORD", "KEY", "RAZORPAY_SECRET", "RAZORPAY_KEY", "SENDGRID_API_KEY",
+	"DB_HOST", "DB_NAME", "DB_USER", "DB_PORT", "DB_PASSWORD", "KEY", "RAZORPAY_SECRET", "RAZORPAY_KEY", "EMAILJET_KEY", "EMAILJET_SECRET",
 }
 
 func LoadConfig() (Config, error) {
