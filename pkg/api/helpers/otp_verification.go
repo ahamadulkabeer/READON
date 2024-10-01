@@ -27,17 +27,27 @@ func GenerateAndSendOpt(email string) (string, error) {
 	otpUUID := uuid.NewV4()
 	otp := otpUUID.String()[:6]
 
-	// from := mail.NewEmail("READON", "ahmdkabeerm@gmail.com")
-	// subject := otp
-	// to := mail.NewEmail(email, email)
-	// plainTextContent := fmt.Sprintf("Your OTP is: %s", otp)
-	// htmlContent := fmt.Sprintf("<p>Your OTP is: <strong>%s</strong></p>", otp)
-
-	// message := mail.NewSingleEmail(from, subject, to, plainTextContent, htmlContent)
-
 	mailjetClient := mailjet.NewMailjetClient(emailjetApiKey, emailjetSecretKey)
 	fmt.Println("email :", email)
-	recipientName := "add RECIEPINT NAME"
+	recipientName := "add User"
+	htmlContent := fmt.Sprintf(`
+	<html>
+	<body style="font-family: Arial, sans-serif; margin: 0; padding: 0;">
+		<div style="max-width: 600px; margin: 20px auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
+			<h2 style="color: #333;">Welcome to ReadOn!</h2>
+			<p>Hello %s,</p>
+			<p>Thank you for signing up at <strong>ReadOn</strong>. Please use the following One-Time Password (OTP) to verify your email address:</p>
+			<div style="text-align: center; margin: 20px 0;">
+				<p style="font-size: 24px; font-weight: bold; color: #4CAF50;">%s</p>
+			</div>
+			<p>If you did not request this, please ignore this email.</p>
+			<p>Thanks,<br/>The ReadOn Team</p>
+			<hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+			<p style="font-size: 12px; color: #888;">This email was sent by ReadOn. If you have any questions, please contact us at support@readon.com.</p>
+		</div>
+	</body>
+	</html>
+`, recipientName, otp)
 	messagesInfo := []mailjet.InfoMessagesV31{
 		{
 			From: &mailjet.RecipientV31{
@@ -52,15 +62,7 @@ func GenerateAndSendOpt(email string) (string, error) {
 			},
 			Subject:  "Your OTP for ReadOn Account Verification",
 			TextPart: fmt.Sprintf("Hello %s,\n\nYour OTP for verifying your ReadOn account is: %s.\nPlease enter this code on the verification page to complete the process.\n\nIf you did not request this, please ignore this email.\n\nThank you for using ReadOn!\n\nBest Regards,\nThe ReadOn Team", recipientName, otp),
-			HTMLPart: fmt.Sprintf(`
-                <h2>Hello %s,</h2>
-                <p>Your OTP for verifying your ReadOn account is: <strong>%s</strong>.</p>
-                <p>Please enter this code on the verification page to complete the process.</p>
-                <p>If you did not request this, please ignore this email.</p>
-                <br>
-                <p>Thank you for using <strong>ReadOn</strong>!</p>
-                <p>Best Regards,</p>
-                <p>The ReadOn Team</p>`, recipientName, otp),
+			HTMLPart: htmlContent,
 		},
 	}
 
