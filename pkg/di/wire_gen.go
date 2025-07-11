@@ -11,6 +11,7 @@ import (
 	"readon/pkg/api"
 	"readon/pkg/api/handler"
 	"readon/pkg/api/helpers"
+	"readon/pkg/api/middleware"
 	"readon/pkg/db"
 	"readon/pkg/repository"
 	"readon/pkg/usecase"
@@ -19,7 +20,8 @@ import (
 // Injectors from wire.go:
 
 func InitializeAPI(cfg config.Config) (*http.ServerHTTP, error) {
-	gormDB, err := db.ConnectDatabase(cfg)
+
+	gormDB, err := db.ConnectDatabase(cfg.DBUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -72,6 +74,11 @@ func InitializeAPI(cfg config.Config) (*http.ServerHTTP, error) {
 	if err != nil {
 		return nil,err
 	}
+
+	// err = helpers.IntialiseS3Connection()
+	// if err != nil {
+	// 	return nil , err
+	// }
 	
 	serverHTTP := http.NewServerHTTP(userHandler,productHandler,adminHandler,categoryHandler,cartHandler,orderHandler,addressHandler,couponHandler)
 
@@ -79,11 +86,19 @@ func InitializeAPI(cfg config.Config) (*http.ServerHTTP, error) {
 }
 
 func loadApikeys(cfg config.Config)error{
+
+	if err := middleware.LoadJWTSecretKey(cfg.JWTSecretKeyword); err != nil {
+		return err
+	}
 	if err := usecase.LoadRazorpayConfig(cfg.RazorpayKey,cfg.RazorpaySecret); err != nil {
 		return err
 	}
 	if err :=  helpers.SetEmailConfig(cfg.EmailjetApiKey,cfg.EmailjetSecretKey); err != nil {
 		return err
 	}
+	if err :=  helpers.LoadAWSS3SecretKeys(cfg.AWSS3AccessKeyID,cfg.AWSS3SecretAccessKey); err != nil {
+		return err
+	}
 	return nil
+
 }

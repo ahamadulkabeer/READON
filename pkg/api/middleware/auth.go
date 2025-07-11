@@ -1,10 +1,21 @@
 package middleware
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/golang-jwt/jwt"
 )
+
+var JWTSecretKey string
+
+func LoadJWTSecretKey(key string) error {
+	if key == "" {
+		return errors.New("jwt secret key is empty")
+	}
+	JWTSecretKey = key
+	return nil
+}
 
 // creating token string from data
 func GetTokenString(id uint, role string, premium bool) string {
@@ -16,7 +27,7 @@ func GetTokenString(id uint, role string, premium bool) string {
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	ss, err := token.SignedString([]byte("secret"))
+	ss, err := token.SignedString([]byte(JWTSecretKey))
 	if err != nil {
 		fmt.Println("error while creating token:", err)
 	}
@@ -29,7 +40,7 @@ func validateToken(tokenstring string) (*jwt.Token, error) {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 		}
 
-		return []byte("secret"), nil
+		return []byte(JWTSecretKey), nil
 	})
 
 	return token, err

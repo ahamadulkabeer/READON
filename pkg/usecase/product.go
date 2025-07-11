@@ -22,15 +22,6 @@ func NewProductUseCase(repo interfaces.ProductRepository) services.ProductUseCas
 	}
 }
 
-// func (c ProductUseCase) ListProducts() responses.Response {
-// 	listofbooks, err := c.productRepo.ListProducts()
-// 	if err != nil {
-// 		statusCode, _ := errorhandler.HandleDatabaseError(err)
-// 		responses.ClientReponse(statusCode, "couldn't fetch list of books", err.Error(), nil)
-// 	}
-// 	return responses.ClientReponse(http.StatusOK, "list of books fetched", nil, listofbooks)
-// }
-
 func (c ProductUseCase) ListProductsForUser(pageDet *models.Pagination) responses.Response {
 
 	// pagination details

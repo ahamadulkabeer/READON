@@ -31,6 +31,8 @@ func (cr ProductHandler) ListProductsForUSer(c *gin.Context) { // listing , sear
 	var pagedetails models.Pagination
 	pagedetails.Page = 1
 
+	c.Value("user")
+
 	err := c.BindQuery(&pagedetails)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, responses.ClientReponse(http.StatusBadRequest,

@@ -17,7 +17,6 @@ func SetEmailConfig(apiKey, secretKey string) error {
 	if secretKey == "" {
 		return errors.New("email servise secret key is empty")
 	}
-	fmt.Println("sennf grid api key ", apiKey)
 	emailjetApiKey = apiKey
 	emailjetSecretKey = secretKey
 	return nil

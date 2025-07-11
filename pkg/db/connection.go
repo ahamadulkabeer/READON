@@ -1,19 +1,17 @@
 package db
 
 import (
-	"fmt"
 	"log"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	config "readon/config"
 	domain "readon/pkg/domain"
 )
 
-func ConnectDatabase(cfg config.Config) (*gorm.DB, error) {
-	psqlInfo := fmt.Sprintf("host=%s user=%s dbname=%s port=%s password=%s", cfg.DBHost, cfg.DBUser, cfg.DBName, cfg.DBPort, cfg.DBPassword)
-	db, dbErr := gorm.Open(postgres.Open(psqlInfo), &gorm.Config{
+func ConnectDatabase(dsn string) (*gorm.DB, error) {
+
+	db, dbErr := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		SkipDefaultTransaction: true,
 	})
 

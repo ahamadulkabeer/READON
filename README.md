@@ -74,4 +74,3 @@ For removing existing user
 ### `PUT /api/users/:id`
 
 For updating existing user
-

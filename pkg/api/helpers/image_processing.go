@@ -3,6 +3,7 @@ package helpers
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"image"
 	"image/draw"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
@@ -111,6 +113,48 @@ func SaveCroppedImage(croppedImageData []byte) error {
 	}
 
 	fmt.Println("Cropped image saved as", outputFile)
+	return nil
+}
+
+var AWSS3AccessKeyID, AWSS3SecretAccessKey string
+var SVCConn *s3.Client
+
+func LoadAWSS3SecretKeys(AWSS3AccessKeyIDStr, AWSS3SecretAccessKeyStr string) error {
+	if AWSS3AccessKeyIDStr == "" {
+		return errors.New("AWS secret ID is empty")
+	}
+	AWSS3AccessKeyID = AWSS3AccessKeyIDStr
+	if AWSS3SecretAccessKeyStr == "" {
+		return errors.New("AWS secret key is empty")
+	}
+	AWSS3SecretAccessKey = AWSS3SecretAccessKeyStr
+	return nil
+}
+
+func IntialiseS3Connection() error {
+
+	bucketName := "readon-images"
+
+	customCfg := aws.Config{
+		Region:      "us-east-1",                                                                          // Specify your region
+		Credentials: credentials.NewStaticCredentialsProvider(AWSS3AccessKeyID, AWSS3SecretAccessKey, ""), // "" for session token if not using
+	}
+
+	svc := s3.NewFromConfig(customCfg)
+
+	result, err := svc.HeadBucket(context.TODO(), &s3.HeadBucketInput{
+		Bucket: aws.String(bucketName),
+	})
+
+	if err != nil {
+		fmt.Println("errorrr :", err)
+		fmt.Println("Error verifying S3 session (bucket might not exist or insufficient permissions):", err)
+		return err
+	}
+
+	SVCConn = svc
+	fmt.Println("results :", result)
+
 	return nil
 }
 
