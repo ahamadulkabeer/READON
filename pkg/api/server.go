@@ -1,8 +1,6 @@
 package http
 
 import (
-	"os"
-
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	swaggerfiles "github.com/swaggo/files"
@@ -30,12 +28,12 @@ func NewServerHTTP(userHandler *handler.UserHandler,
 	engine.Use(cors.Default())
 	engine.Use(gin.Logger()) // Use logger from Gin
 
-	// parse template
-	templatePath := os.Getenv("TEMPLATE_PATH")
-	if templatePath == "" {
-		templatePath = "./pkg/templates/*.html"
-	}
-	engine.LoadHTMLGlob(templatePath)
+	// // parse template
+	// templatePath := os.Getenv("TEMPLATE_PATH")
+	// // if templatePath == "" {
+	// // 	templatePath = "./pkg/templates/*.html"
+	// // }
+	// engine.LoadHTMLGlob(templatePath)
 
 	// Swagger docs
 	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))

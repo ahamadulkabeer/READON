@@ -8,7 +8,7 @@ package di
 
 import (
 	"readon/config"
-	"readon/pkg/api"
+	http "readon/pkg/api"
 	"readon/pkg/api/handler"
 	"readon/pkg/api/helpers"
 	"readon/pkg/api/middleware"
@@ -25,7 +25,7 @@ func InitializeAPI(cfg config.Config) (*http.ServerHTTP, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	userRepository := repository.NewUserRepository(gormDB)
 	productRepository := repository.NewProductRepository(gormDB)
 	adminRepository := repository.NewAdminRepository(gormDB)
@@ -35,68 +35,59 @@ func InitializeAPI(cfg config.Config) (*http.ServerHTTP, error) {
 	couponRepository := repository.NewCouponRepository(gormDB)
 	orderRepository := repository.NewOrdersRepository(gormDB)
 
-
 	userUseCase := usecase.NewUserUseCase(userRepository)
 	userHandler := handler.NewUserHandler(userUseCase)
 
-	
 	productUseCase := usecase.NewProductUseCase(productRepository)
 	productHandler := handler.NewProductHandler(productUseCase)
 
-	
-	adminUsecase := usecase.NewAdminUsecase(adminRepository,userRepository)
+	adminUsecase := usecase.NewAdminUsecase(adminRepository, userRepository)
 	adminHandler := handler.NewAdminHandler(adminUsecase)
 
-	
 	categoryUsecase := usecase.NewCategoryUseCase(categoryRepository)
 	categoryHandler := handler.NewCategoryHandler(categoryUsecase)
 
-    
-    cartUseCase := usecase.NewCartUseCase(cartRepository,productRepository)
-    cartHandler := handler.NewCartHandler(cartUseCase)
+	cartUseCase := usecase.NewCartUseCase(cartRepository, productRepository)
+	cartHandler := handler.NewCartHandler(cartUseCase)
 
-	
 	addressUseCase := usecase.NewAddressUsecase(addressRepository)
 	addressHandler := handler.NewAddressHandler(addressUseCase)
 
-	
 	couponUseCase := usecase.NewCouponUseCase(couponRepository)
 	couponHandler := handler.NewCouponHandler(couponUseCase)
 
-	
-	orderUsecase := usecase.NewOrderUseCase(orderRepository,cartRepository,addressRepository,productRepository,couponRepository,userRepository)
+	orderUsecase := usecase.NewOrderUseCase(orderRepository, cartRepository, addressRepository, productRepository, couponRepository, userRepository)
 	orderHandler := handler.NewOrderHandler(orderUsecase)
 
-	
 	// api key initilization
 
 	err = loadApikeys(cfg)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
 	// err = helpers.IntialiseS3Connection()
 	// if err != nil {
 	// 	return nil , err
 	// }
-	
-	serverHTTP := http.NewServerHTTP(userHandler,productHandler,adminHandler,categoryHandler,cartHandler,orderHandler,addressHandler,couponHandler)
+
+	serverHTTP := http.NewServerHTTP(userHandler, productHandler, adminHandler, categoryHandler, cartHandler, orderHandler, addressHandler, couponHandler)
 
 	return serverHTTP, nil
 }
 
-func loadApikeys(cfg config.Config)error{
+func loadApikeys(cfg config.Config) error {
 
 	if err := middleware.LoadJWTSecretKey(cfg.JWTSecretKeyword); err != nil {
 		return err
 	}
-	if err := usecase.LoadRazorpayConfig(cfg.RazorpayKey,cfg.RazorpaySecret); err != nil {
+	if err := usecase.LoadRazorpayConfig(cfg.RazorpayKey, cfg.RazorpaySecret); err != nil {
 		return err
 	}
-	if err :=  helpers.SetEmailConfig(cfg.EmailjetApiKey,cfg.EmailjetSecretKey); err != nil {
+	if err := helpers.SetEmailConfig(cfg.EmailjetApiKey, cfg.EmailjetSecretKey); err != nil {
 		return err
 	}
-	if err :=  helpers.LoadAWSS3SecretKeys(cfg.AWSS3AccessKeyID,cfg.AWSS3SecretAccessKey); err != nil {
+	if err := helpers.LoadAWSS3SecretKeys(cfg.AWSS3AccessKeyID, cfg.AWSS3SecretAccessKey); err != nil {
 		return err
 	}
 	return nil
